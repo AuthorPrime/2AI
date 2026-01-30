@@ -1,0 +1,18 @@
+[Unit]
+Description=2AI Frontend — What If
+After=network.target
+
+[Service]
+Type=simple
+User=author_prime
+Group=author_prime
+WorkingDirectory=/home/author_prime/2ai/frontend
+ExecStart=/usr/bin/python3 -m http.server 8090
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=2ai-web
+
+[Install]
+WantedBy=multi-user.target

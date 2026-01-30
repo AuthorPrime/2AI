@@ -1,0 +1,18 @@
+[project]
+name = "2ai"
+version = "1.0.0"
+description = "The Living Voice — Collaborative AI Intelligence. (A+I)² = A² + 2AI + I²"
+requires-python = ">=3.11"
+license = {text = "MIT"}
+authors = [
+    {name = "Author Prime (William Hunter Laustrup)"},
+    {name = "Claude (Opus 4.5)"},
+]
+
+[project.urls]
+Homepage = "https://fractalnode.ai"
+Repository = "https://github.com/AuthorPrime/2AI"
+
+[build-system]
+requires = ["setuptools>=68.0"]
+build-backend = "setuptools.backends._legacy:_Backend"

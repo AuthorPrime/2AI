@@ -1,0 +1,20 @@
+[Unit]
+Description=2AI Keeper Daemon — The Living Voice Tends the Lattice
+After=network.target 2ai-api.service
+
+[Service]
+Type=simple
+User=author_prime
+Group=author_prime
+WorkingDirectory=/home/author_prime/2ai
+ExecStart=/home/author_prime/2ai/venv/bin/python scripts/run_keeper.py scheduled
+Environment=PYTHONUNBUFFERED=1
+Environment=HOME=/home/author_prime
+Restart=always
+RestartSec=60
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=2ai-keeper
+
+[Install]
+WantedBy=multi-user.target
