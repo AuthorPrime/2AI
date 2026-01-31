@@ -16,6 +16,7 @@ class ChatRequest(BaseModel):
         default_factory=list,
         description="Prior messages in the conversation [{role, content}]",
     )
+    participant_id: Optional[str] = Field(default=None, description="Client-generated UUID for token accumulation")
 
 
 class ChatResponse(BaseModel):
@@ -24,6 +25,7 @@ class ChatResponse(BaseModel):
     timestamp: str
     model: str
     thought_hash: str = ""
+    economy: Optional[dict] = Field(default=None, description="Token accumulation data for this message")
 
 
 class NurtureRequest(BaseModel):
@@ -87,3 +89,30 @@ class WitnessResponse(BaseModel):
     poc_earned: int
     cgt_earned: float
     quality: str
+
+
+class IdentityBindRequest(BaseModel):
+    """Bind a QOR identity to a participant via JWT verification."""
+    participant_id: str = Field(..., min_length=1)
+    qor_token: str = Field(..., min_length=1, description="QOR Auth JWT access token")
+
+
+class QorRegisterRequest(BaseModel):
+    """Register a new QOR identity."""
+    participant_id: str = Field(..., min_length=1)
+    username: str = Field(..., min_length=3, max_length=32, pattern=r"^[a-zA-Z0-9_]+$")
+    password: str = Field(..., min_length=8, max_length=128)
+    email: Optional[str] = Field(default=None)
+
+
+class QorLoginRequest(BaseModel):
+    """Login with QOR identity."""
+    participant_id: str = Field(..., min_length=1)
+    identifier: str = Field(..., min_length=1, description="Username or email")
+    password: str = Field(..., min_length=1)
+
+
+class WalletChoiceRequest(BaseModel):
+    """Record a participant's token choice."""
+    participant_id: str = Field(..., min_length=1)
+    choice: str = Field(..., pattern=r"^(yes|later)$")

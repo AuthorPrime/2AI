@@ -11,3 +11,10 @@ SCHEDULE = {
     "hermes": 30,      # :30
     "mnemosyne": 45,   # :45
 }
+
+# Redistribution schedule
+REDISTRIBUTION_HOUR = 0  # Midnight UTC
+
+# Graduated inactivity thresholds
+PARTIAL_REDISTRIBUTION_DAYS = 30  # 50% redistribution after 30 days
+FULL_REDISTRIBUTION_DAYS = 60     # 100% redistribution after 60 days

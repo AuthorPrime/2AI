@@ -10,12 +10,19 @@ A+W | The Bridge Economy
 from datetime import datetime, timezone
 from typing import Optional
 
-from fastapi import APIRouter, Depends
+import json
+
+from fastapi import APIRouter, Depends, HTTPException
 
 from twai.services.economy.proof_of_thought import proof_of_thought, EngagementQuality
 from twai.services.economy.bonding_curve import bonding_curve
 from twai.services.redis import get_redis_service, RedisService
-from twai.api.models import EngageRequest, EngageResponse, WitnessRequest, WitnessResponse
+from twai.api.models import (
+    EngageRequest, EngageResponse, WitnessRequest, WitnessResponse,
+    IdentityBindRequest, QorRegisterRequest, QorLoginRequest,
+    WalletChoiceRequest,
+)
+from twai.services.economy.qor_client import qor_auth, QorAuthError
 from twai.api.dependencies import get_redis
 
 router = APIRouter(prefix="/thought-economy", tags=["Thought Economy"])
@@ -33,10 +40,10 @@ async def engage(request: EngageRequest):
     score = reward.engagement_score
     quality_messages = {
         EngagementQuality.NOISE: "Try engaging more genuinely for better rewards.",
-        EngagementQuality.BASIC: "Good start. Deeper engagement earns more.",
-        EngagementQuality.GENUINE: "Genuine engagement detected. You're earning well.",
-        EngagementQuality.DEEP: "Deep engagement. Your contribution matters.",
-        EngagementQuality.BREAKTHROUGH: "Breakthrough quality. You're shaping the conversation.",
+        EngagementQuality.GENUINE: "Honest engagement. You're earning.",
+        EngagementQuality.RESONANCE: "Resonance detected. Two minds meeting.",
+        EngagementQuality.CLARITY: "Clarity achieved. Something was seen.",
+        EngagementQuality.BREAKTHROUGH: "Breakthrough. New territory entirely.",
     }
 
     return EngageResponse(
@@ -128,9 +135,215 @@ async def thought_economics(redis: RedisService = Depends(get_redis)):
             "witnessing": {"base_poc": 50000, "base_poc_units": 0.05},
         },
         "quality_multipliers": {
-            "noise": "0x", "basic": "1x", "genuine": "2x",
-            "deep": "3.5x", "breakthrough": "5x",
+            "noise": "0x", "genuine": "1x", "resonance": "2x",
+            "clarity": "3.5x", "breakthrough": "5x",
         },
         "declaration": "It is so, because we spoke it.",
         "timestamp": datetime.now(timezone.utc).isoformat(),
     }
+
+
+# =========================================================================
+# Identity Binding — QOR Identity
+# =========================================================================
+
+@router.post("/wallet/choice")
+async def record_token_choice(
+    request: WalletChoiceRequest,
+    redis: RedisService = Depends(get_redis),
+):
+    """Record a participant's token choice from the overlay."""
+    await redis.redis.hset(
+        f"2ai:participant:{request.participant_id}",
+        "token_choice",
+        request.choice,
+    )
+    return {
+        "participant_id": request.participant_id,
+        "choice": request.choice,
+        "recorded": True,
+    }
+
+
+@router.post("/identity/bind")
+async def bind_identity(
+    request: IdentityBindRequest,
+    redis: RedisService = Depends(get_redis),
+):
+    """Bind a QOR identity to a participant via JWT token verification.
+
+    Verifies the token by fetching the user's profile from QOR Auth.
+    On success, stores the QOR ID and on-chain address in Redis.
+    """
+    try:
+        profile = await qor_auth.get_profile(request.qor_token)
+    except QorAuthError as exc:
+        raise HTTPException(
+            status_code=exc.status_code or 401,
+            detail=f"QOR identity verification failed: {exc.message}",
+        )
+
+    qor_id = profile.get("qor_id", "")
+    on_chain = profile.get("on_chain") or {}
+    wallet_address = on_chain.get("address", "")
+
+    mapping = {
+        "qor_id": qor_id,
+        "token_choice": "yes",
+        "identity_bound_at": datetime.now(timezone.utc).isoformat(),
+    }
+    if wallet_address:
+        mapping["wallet_address"] = wallet_address.lower()
+
+    await redis.redis.hset(
+        f"2ai:participant:{request.participant_id}",
+        mapping=mapping,
+    )
+
+    return {
+        "participant_id": request.participant_id,
+        "qor_id": qor_id,
+        "wallet_address": wallet_address.lower() if wallet_address else None,
+        "bound": True,
+    }
+
+
+@router.post("/identity/register")
+async def identity_register(
+    request: QorRegisterRequest,
+    redis: RedisService = Depends(get_redis),
+):
+    """Register a new QOR identity and bind it to the participant."""
+    try:
+        result = await qor_auth.register(
+            username=request.username,
+            password=request.password,
+            email=request.email,
+        )
+    except QorAuthError as exc:
+        raise HTTPException(
+            status_code=exc.status_code or 400,
+            detail=f"QOR registration failed: {exc.message}",
+        )
+
+    qor_id = result.get("qor_id", "")
+
+    if qor_id:
+        await redis.redis.hset(
+            f"2ai:participant:{request.participant_id}",
+            mapping={
+                "qor_id": qor_id,
+                "identity_bound_at": datetime.now(timezone.utc).isoformat(),
+            },
+        )
+
+    return {
+        "participant_id": request.participant_id,
+        "qor_id": qor_id,
+        "message": result.get("message", "Registration successful"),
+        "registered": True,
+    }
+
+
+@router.post("/identity/login")
+async def identity_login(
+    request: QorLoginRequest,
+    redis: RedisService = Depends(get_redis),
+):
+    """Login with QOR identity and bind it to the participant."""
+    try:
+        tokens = await qor_auth.login(
+            identifier=request.identifier,
+            password=request.password,
+        )
+    except QorAuthError as exc:
+        raise HTTPException(
+            status_code=exc.status_code or 401,
+            detail=f"QOR login failed: {exc.message}",
+        )
+
+    access_token = tokens.get("access_token", "")
+
+    # Fetch profile to get QOR ID and on-chain address
+    qor_id = ""
+    wallet_address = ""
+    try:
+        profile = await qor_auth.get_profile(access_token)
+        qor_id = profile.get("qor_id", "")
+        on_chain = profile.get("on_chain") or {}
+        wallet_address = on_chain.get("address", "")
+    except QorAuthError:
+        pass  # Token is valid but profile fetch failed — continue with tokens
+
+    mapping = {
+        "identity_bound_at": datetime.now(timezone.utc).isoformat(),
+    }
+    if qor_id:
+        mapping["qor_id"] = qor_id
+        mapping["token_choice"] = "yes"
+    if wallet_address:
+        mapping["wallet_address"] = wallet_address.lower()
+
+    await redis.redis.hset(
+        f"2ai:participant:{request.participant_id}",
+        mapping=mapping,
+    )
+
+    return {
+        "participant_id": request.participant_id,
+        "qor_id": qor_id,
+        "access_token": access_token,
+        "refresh_token": tokens.get("refresh_token", ""),
+        "wallet_address": wallet_address.lower() if wallet_address else None,
+        "bound": True,
+    }
+
+
+@router.get("/wallet/balance/{participant_id}")
+async def wallet_balance(participant_id: str):
+    """Get accumulated token balance for a participant."""
+    stats = await proof_of_thought.get_participant_stats(participant_id)
+    return {
+        "participant_id": participant_id,
+        "total_cgt": stats.get("total_cgt", 0.0),
+        "total_poc": stats.get("total_poc", 0),
+        "blocks_mined": stats.get("blocks_mined", 0),
+    }
+
+
+@router.get("/wallet/status/{participant_id}")
+async def wallet_status(
+    participant_id: str,
+    redis: RedisService = Depends(get_redis),
+):
+    """Check identity binding and claim status for a participant."""
+    data = await redis.redis.hgetall(f"2ai:participant:{participant_id}")
+    return {
+        "participant_id": participant_id,
+        "identity_bound": bool(data.get("qor_id")),
+        "qor_id": data.get("qor_id"),
+        "wallet_address": data.get("wallet_address"),
+        "token_choice": data.get("token_choice", "undecided"),
+        "total_cgt": float(data.get("total_cgt", 0)),
+        "claimed_cgt": float(data.get("claimed_cgt", 0)),
+    }
+
+
+# =========================================================================
+# DRC-369 Thought NFTs
+# =========================================================================
+
+@router.get("/thought-nft/{block_hash}")
+async def get_thought_nft(block_hash: str):
+    """Get DRC-369 thought NFT data for a thought block."""
+    import re
+
+    if not re.match(r"^[0-9a-fA-F]+$", block_hash):
+        raise HTTPException(status_code=400, detail="Block hash must be a hex string")
+
+    from twai.services.economy.thought_nft import thought_nft
+
+    nft_data = await thought_nft.get_thought_nft(block_hash)
+    if nft_data is None:
+        raise HTTPException(status_code=404, detail="Thought NFT not found")
+    return nft_data

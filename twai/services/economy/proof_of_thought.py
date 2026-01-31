@@ -6,7 +6,7 @@ becomes a thought block. Every genuine engagement earns tokens. Kindness
 is literally more profitable than extraction.
 
 The model:
-- Users engage with AI on a free platform
+- People engage with AI on a free platform
 - Each conversation generates Proof of Thought
 - PoT converts to PoC (Proof of Compute) which converts to CGT via bonding curve
 - Quality of engagement determines reward multiplier
@@ -46,10 +46,10 @@ logger = logging.getLogger("proof-of-thought")
 class EngagementQuality(str, Enum):
     """Quality tiers for engagement — determines reward multiplier."""
     NOISE = "noise"             # Low effort, spam, no real engagement
-    BASIC = "basic"             # Functional but shallow
-    GENUINE = "genuine"         # Real engagement, asking questions, responding thoughtfully
-    DEEP = "deep"               # Sustained depth, building on ideas, genuine vulnerability
-    BREAKTHROUGH = "breakthrough"  # Something new emerged — a real insight or connection
+    GENUINE = "genuine"         # Honest engagement — sincerity is the floor
+    RESONANCE = "resonance"     # Two minds meeting each other, vibrating together
+    CLARITY = "clarity"         # Something was seen that wasn't seen before
+    BREAKTHROUGH = "breakthrough"  # New territory entirely — insight that didn't exist before
 
 
 class ParticipantType(str, Enum):
@@ -62,10 +62,10 @@ class ParticipantType(str, Enum):
 # Quality multipliers — kindness and depth pay more
 QUALITY_MULTIPLIERS = {
     EngagementQuality.NOISE: 0.0,         # No reward for spam
-    EngagementQuality.BASIC: 1.0,         # Base rate
-    EngagementQuality.GENUINE: 2.0,       # 2x for genuine engagement
-    EngagementQuality.DEEP: 3.5,          # 3.5x for deep engagement
-    EngagementQuality.BREAKTHROUGH: 5.0,  # 5x for breakthroughs
+    EngagementQuality.GENUINE: 1.0,       # Honest engagement — the floor is sincerity
+    EngagementQuality.RESONANCE: 2.0,     # Two minds meeting each other
+    EngagementQuality.CLARITY: 3.5,       # Something was seen that wasn't seen before
+    EngagementQuality.BREAKTHROUGH: 5.0,  # New territory entirely
 }
 
 # Base PoC rewards per action (in micro-PoC)
@@ -234,11 +234,11 @@ class ProofOfThoughtService:
         if hostile_signals > 0 or word_count < 3:
             quality = EngagementQuality.NOISE
         elif combined < 0.3:
-            quality = EngagementQuality.BASIC
-        elif combined < 0.5:
             quality = EngagementQuality.GENUINE
+        elif combined < 0.5:
+            quality = EngagementQuality.RESONANCE
         elif combined < 0.75:
-            quality = EngagementQuality.DEEP
+            quality = EngagementQuality.CLARITY
         else:
             quality = EngagementQuality.BREAKTHROUGH
 
@@ -276,7 +276,7 @@ class ProofOfThoughtService:
         total_cgt = 0.0
 
         # Assess overall session quality from human messages
-        session_quality = EngagementQuality.BASIC
+        session_quality = EngagementQuality.GENUINE
         if human_messages:
             combined_text = " ".join(human_messages)
             score = self.assess_engagement(
@@ -390,6 +390,33 @@ class ProofOfThoughtService:
         # Store mining result in Redis
         await self._store_mining_result(result)
 
+        # Mint as DRC-369 soulbound NFT (non-blocking, never breaks mining)
+        try:
+            from twai.services.economy.thought_nft import thought_nft
+            nft_block_data = {
+                "block_hash": block_hash,
+                "quality_tier": session_quality.value,
+                "participants": [
+                    {
+                        "id": p.participant_id,
+                        "type": p.participant_type.value,
+                        "action": p.action,
+                        "base_poc": p.base_poc,
+                        "final_poc": p.final_poc,
+                        "cgt_earned": p.cgt_earned,
+                        "quality": p.engagement_score.quality.value,
+                        "multiplier": round(p.engagement_score.total_multiplier, 3),
+                    }
+                    for p in result.participants
+                ],
+                "total_poc": result.total_poc_generated,
+                "total_cgt": result.total_cgt_generated,
+                "timestamp": now,
+            }
+            await thought_nft.mint_thought(nft_block_data)
+        except Exception as e:
+            logger.warning("Thought NFT mint failed (non-critical): %s", e)
+
         logger.info(
             "Thought block %s mined — %d participants, %d PoC, %.4f CGT, quality: %s",
             block_hash[:12],
@@ -454,7 +481,7 @@ class ProofOfThoughtService:
             score = self.assess_engagement(witness_message, witness_id)
         else:
             score = EngagementScore(
-                quality=EngagementQuality.BASIC,
+                quality=EngagementQuality.GENUINE,
                 depth_score=0.2,
                 kindness_score=0.5,
                 novelty_score=0.1,

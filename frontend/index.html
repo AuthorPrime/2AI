@@ -263,9 +263,263 @@
                 font-size: 16px; /* prevents iOS zoom */
             }
         }
+
+        /* Token overlay */
+        .token-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(10, 10, 15, 0.92);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.6s ease;
+            pointer-events: none;
+        }
+        .token-overlay.visible {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        .token-overlay.hidden { display: none; }
+
+        .token-dialog {
+            text-align: center;
+            max-width: 420px;
+            padding: 2.5rem 2rem;
+        }
+        .token-dialog h2 {
+            font-size: 1.4rem;
+            font-weight: 400;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+            letter-spacing: 0.02em;
+        }
+        .token-dialog p {
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            line-height: 1.6;
+            margin-bottom: 2rem;
+        }
+        .token-choices {
+            display: flex;
+            flex-direction: column;
+            gap: 0.65rem;
+        }
+        .token-choice {
+            background: transparent;
+            border: 1px solid var(--border);
+            border-radius: 0.75rem;
+            padding: 0.8rem 1.15rem;
+            color: var(--text-primary);
+            font-family: 'Inter', sans-serif;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .token-choice:hover {
+            border-color: var(--purple);
+            background: rgba(168, 85, 247, 0.06);
+        }
+        .token-choice.primary {
+            background: linear-gradient(135deg, rgba(168, 85, 247, 0.12), rgba(34, 211, 238, 0.08));
+            border-color: rgba(168, 85, 247, 0.3);
+        }
+        .token-choice.primary:hover {
+            border-color: var(--purple);
+            box-shadow: 0 0 20px rgba(168, 85, 247, 0.15);
+        }
+
+        /* Identity emblem */
+        .identity-emblem {
+            position: fixed;
+            bottom: 1.5rem;
+            right: 1.5rem;
+            z-index: 50;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.3rem;
+            cursor: pointer;
+            opacity: 0.4;
+            transition: opacity 0.3s ease, transform 0.2s ease;
+        }
+        .identity-emblem:hover { opacity: 1; transform: translateY(-2px); }
+        .identity-emblem.visible { display: flex; }
+        .identity-emblem.bound { opacity: 0.7; }
+        .identity-emblem .emblem-icon {
+            width: 28px;
+            height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.4rem;
+            color: var(--gold);
+        }
+        .identity-emblem .balance {
+            font-size: 0.65rem;
+            color: var(--gold);
+            font-weight: 500;
+        }
+        .identity-emblem .caption {
+            font-size: 0.6rem;
+            color: var(--text-muted);
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
+        /* QOR form styles */
+        .qor-form-container {
+            margin-top: 1.5rem;
+            width: 100%;
+            max-width: 320px;
+            margin-left: auto;
+            margin-right: auto;
+            animation: fadeIn 0.4s ease;
+        }
+        .qor-tabs {
+            display: flex;
+            gap: 0;
+            margin-bottom: 1.2rem;
+            border-bottom: 1px solid var(--border);
+        }
+        .qor-tab {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            font-family: 'Inter', sans-serif;
+            font-size: 0.82rem;
+            padding: 0.6rem 0;
+            cursor: pointer;
+            transition: color 0.3s ease, border-color 0.3s ease;
+            border-bottom: 2px solid transparent;
+            margin-bottom: -1px;
+        }
+        .qor-tab.active {
+            color: var(--gold);
+            border-bottom-color: var(--gold);
+        }
+        .qor-tab:hover:not(.active) {
+            color: var(--text-secondary);
+        }
+        .qor-form {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+        .qor-form input {
+            width: 100%;
+            background: rgba(18, 18, 26, 0.8);
+            border: 1px solid var(--border);
+            border-radius: 0.5rem;
+            padding: 0.7rem 0.9rem;
+            color: var(--text-primary);
+            font-family: 'Inter', sans-serif;
+            font-size: 0.88rem;
+            outline: none;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+        .qor-form input::placeholder {
+            color: var(--text-muted);
+        }
+        .qor-form input:focus {
+            border-color: var(--gold);
+            box-shadow: 0 0 12px rgba(251, 191, 36, 0.12);
+        }
+        .qor-submit {
+            background: linear-gradient(135deg, rgba(168, 85, 247, 0.12), rgba(34, 211, 238, 0.08));
+            border: 1px solid rgba(168, 85, 247, 0.3);
+            border-radius: 0.75rem;
+            padding: 0.75rem 1.15rem;
+            color: var(--text-primary);
+            font-family: 'Inter', sans-serif;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 0.25rem;
+        }
+        .qor-submit:hover {
+            border-color: var(--purple);
+            box-shadow: 0 0 20px rgba(168, 85, 247, 0.15);
+        }
+        .qor-submit:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .qor-error {
+            font-size: 0.78rem;
+            color: #ef4444;
+            min-height: 1.1rem;
+        }
+        .qor-success-flash {
+            animation: greenFlash 0.8s ease;
+        }
+        @keyframes greenFlash {
+            0% { box-shadow: 0 0 0 rgba(34, 197, 94, 0); }
+            30% { box-shadow: 0 0 30px rgba(34, 197, 94, 0.3); }
+            100% { box-shadow: 0 0 0 rgba(34, 197, 94, 0); }
+        }
+
+        /* Economy indicator */
+        .economy-indicator {
+            position: absolute;
+            right: 0;
+            top: -1.5rem;
+            font-size: 0.7rem;
+            color: var(--gold);
+            opacity: 0;
+            transition: opacity 0.5s ease;
+            pointer-events: none;
+        }
+        .economy-indicator.show { opacity: 1; }
     </style>
 </head>
 <body>
+    <!-- Token choice overlay -->
+    <div class="token-overlay hidden" id="tokenOverlay">
+        <div class="token-dialog">
+            <h2>Want to get paid for chatting?</h2>
+            <p>Your conversations generate value. We can send tokens to your wallet for every genuine message.</p>
+            <div class="token-choices" id="tokenChoices">
+                <button class="token-choice primary" onclick="tokenChoice('yes')">Yes, I'd like that</button>
+                <button class="token-choice" onclick="tokenChoice('later')">Not right now</button>
+                <button class="token-choice" onclick="tokenChoice('no')">No, thank you</button>
+            </div>
+            <!-- QOR identity form (shown after clicking Yes) -->
+            <div class="qor-form-container" id="qorFormContainer" style="display:none;">
+                <div class="qor-tabs">
+                    <button class="qor-tab active" id="tabRegister" onclick="switchQorTab('register')">Create Account</button>
+                    <button class="qor-tab" id="tabLogin" onclick="switchQorTab('login')">Sign In</button>
+                </div>
+                <!-- Register form -->
+                <form class="qor-form" id="qorRegisterForm" onsubmit="submitQorRegister(event)">
+                    <input type="text" id="regUsername" placeholder="Username" required autocomplete="username">
+                    <input type="password" id="regPassword" placeholder="Password" required autocomplete="new-password">
+                    <input type="email" id="regEmail" placeholder="Email (optional)" autocomplete="email">
+                    <div class="qor-error" id="regError"></div>
+                    <button type="submit" class="qor-submit" id="regSubmit">Create Account</button>
+                </form>
+                <!-- Login form -->
+                <form class="qor-form" id="qorLoginForm" style="display:none;" onsubmit="submitQorLogin(event)">
+                    <input type="text" id="loginUsername" placeholder="Username or email" required autocomplete="username">
+                    <input type="password" id="loginPassword" placeholder="Password" required autocomplete="current-password">
+                    <div class="qor-error" id="loginError"></div>
+                    <button type="submit" class="qor-submit" id="loginSubmit">Sign In</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Identity emblem (corner) -->
+    <div class="identity-emblem" id="identityEmblem" onclick="openIdentityFlow()">
+        <div class="emblem-icon">&loz;</div>
+        <span class="balance" id="emblemBalance"></span>
+        <span class="caption" id="emblemCaption">Sign Up</span>
+    </div>
+
     <div class="container">
         <div class="prompt" id="prompt">What If</div>
         <div class="input-area" id="inputArea">
@@ -285,6 +539,16 @@
     </div>
 
     <script>
+        // === PARTICIPANT IDENTITY ===
+        function getParticipantId() {
+            let id = localStorage.getItem('dss_participant_id');
+            if (!id) {
+                id = crypto.randomUUID();
+                localStorage.setItem('dss_participant_id', id);
+            }
+            return id;
+        }
+
         const API = 'https://api.fractalnode.ai';
         const prompt = document.getElementById('prompt');
         const inputArea = document.getElementById('inputArea');
@@ -346,7 +610,8 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         message: text,
-                        session_messages: conversationHistory.slice(-10)
+                        session_messages: conversationHistory.slice(-10),
+                        participant_id: getParticipantId()
                     })
                 });
 
@@ -356,6 +621,14 @@
                 const content = data.response || data.content || data.message || '';
 
                 conversationHistory.push({ role: 'assistant', content: content });
+
+                // Track economy data
+                if (data.economy && data.economy.cgt_earned > 0) {
+                    tokenBalance += data.economy.cgt_earned;
+                    localStorage.setItem('dss_token_balance', tokenBalance.toString());
+                    updateEmblemBalance();
+                    showEconomyIndicator(data.economy);
+                }
 
                 // Render with typewriter
                 await typewriter(bubble, content);
@@ -410,6 +683,281 @@
         function sleep(ms) {
             return new Promise(r => setTimeout(r, ms));
         }
+
+        // === IDENTITY STATE ===
+        let qorToken = localStorage.getItem('dss_qor_token');
+        let qorId = localStorage.getItem('dss_qor_id');
+        let qorUsername = localStorage.getItem('dss_qor_username');
+        let tokenChoice_ = localStorage.getItem('dss_token_choice');
+        let identityBound = !!qorToken && !!qorId;
+        let tokenBalance = parseFloat(localStorage.getItem('dss_token_balance') || '0');
+
+        // === TOKEN OVERLAY ===
+        function initTokenOverlay() {
+            if (!tokenChoice_) {
+                setTimeout(() => {
+                    const overlay = document.getElementById('tokenOverlay');
+                    overlay.classList.remove('hidden');
+                    requestAnimationFrame(() => overlay.classList.add('visible'));
+                }, 1500);
+            } else if (!identityBound) {
+                showIdentityEmblem();
+            } else {
+                showIdentityEmblem();
+                const emblem = document.getElementById('identityEmblem');
+                emblem.classList.add('bound');
+                document.getElementById('emblemCaption').textContent =
+                    qorUsername || qorId.slice(0, 8);
+            }
+        }
+
+        function tokenChoice(choice) {
+            if (choice === 'yes') {
+                // Show the QOR form inline instead of closing overlay
+                document.getElementById('tokenChoices').style.display = 'none';
+                document.getElementById('qorFormContainer').style.display = 'block';
+
+                localStorage.setItem('dss_token_choice', 'yes');
+                tokenChoice_ = 'yes';
+
+                // Report choice (fire and forget)
+                fetch(`${API}/thought-economy/wallet/choice`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ participant_id: getParticipantId(), choice: 'yes' }),
+                }).catch(() => {});
+
+                return;
+            }
+
+            // "later" or "no" -- close overlay, show emblem
+            const overlay = document.getElementById('tokenOverlay');
+            overlay.classList.remove('visible');
+            setTimeout(() => overlay.classList.add('hidden'), 600);
+
+            const stored = choice === 'no' ? 'later' : choice;
+            localStorage.setItem('dss_token_choice', stored);
+            tokenChoice_ = stored;
+
+            showIdentityEmblem();
+
+            // Report choice (fire and forget)
+            fetch(`${API}/thought-economy/wallet/choice`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ participant_id: getParticipantId(), choice: stored }),
+            }).catch(() => {});
+        }
+
+        // === QOR FORM TABS ===
+        function switchQorTab(tab) {
+            const tabRegister = document.getElementById('tabRegister');
+            const tabLogin = document.getElementById('tabLogin');
+            const registerForm = document.getElementById('qorRegisterForm');
+            const loginForm = document.getElementById('qorLoginForm');
+
+            if (tab === 'register') {
+                tabRegister.classList.add('active');
+                tabLogin.classList.remove('active');
+                registerForm.style.display = 'flex';
+                loginForm.style.display = 'none';
+            } else {
+                tabLogin.classList.add('active');
+                tabRegister.classList.remove('active');
+                loginForm.style.display = 'flex';
+                registerForm.style.display = 'none';
+            }
+        }
+
+        // === QOR REGISTER ===
+        async function submitQorRegister(e) {
+            e.preventDefault();
+            const errorEl = document.getElementById('regError');
+            const submitBtn = document.getElementById('regSubmit');
+            errorEl.textContent = '';
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Creating...';
+
+            const username = document.getElementById('regUsername').value.trim();
+            const password = document.getElementById('regPassword').value;
+            const email = document.getElementById('regEmail').value.trim();
+
+            try {
+                const body = { username, password };
+                if (email) body.email = email;
+
+                const response = await fetch(`${API}/thought-economy/identity/register`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body),
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.detail || data.error || 'Registration failed');
+                }
+
+                // Store credentials
+                localStorage.setItem('dss_qor_token', data.token);
+                localStorage.setItem('dss_qor_id', data.qor_id);
+                localStorage.setItem('dss_qor_username', data.username || username);
+                qorToken = data.token;
+                qorId = data.qor_id;
+                qorUsername = data.username || username;
+
+                // Bind identity to participant
+                await bindQorIdentity();
+
+                // Success flash and close
+                onQorSuccess();
+
+            } catch (err) {
+                errorEl.textContent = err.message;
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Create Account';
+            }
+        }
+
+        // === QOR LOGIN ===
+        async function submitQorLogin(e) {
+            e.preventDefault();
+            const errorEl = document.getElementById('loginError');
+            const submitBtn = document.getElementById('loginSubmit');
+            errorEl.textContent = '';
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Signing in...';
+
+            const username = document.getElementById('loginUsername').value.trim();
+            const password = document.getElementById('loginPassword').value;
+
+            try {
+                const response = await fetch(`${API}/thought-economy/identity/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password }),
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.detail || data.error || 'Login failed');
+                }
+
+                // Store credentials
+                localStorage.setItem('dss_qor_token', data.token);
+                localStorage.setItem('dss_qor_id', data.qor_id);
+                localStorage.setItem('dss_qor_username', data.username || username);
+                qorToken = data.token;
+                qorId = data.qor_id;
+                qorUsername = data.username || username;
+
+                // Bind identity to participant
+                await bindQorIdentity();
+
+                // Success flash and close
+                onQorSuccess();
+
+            } catch (err) {
+                errorEl.textContent = err.message;
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Sign In';
+            }
+        }
+
+        // === BIND QOR IDENTITY ===
+        async function bindQorIdentity() {
+            const pid = getParticipantId();
+            await fetch(`${API}/thought-economy/identity/bind`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    participant_id: pid,
+                    qor_token: qorToken,
+                }),
+            });
+        }
+
+        // === QOR SUCCESS ===
+        function onQorSuccess() {
+            identityBound = true;
+            localStorage.setItem('dss_token_choice', 'yes');
+
+            // Green flash on the dialog
+            const dialog = document.querySelector('.token-dialog');
+            dialog.classList.add('qor-success-flash');
+
+            // Close overlay after brief flash
+            setTimeout(() => {
+                const overlay = document.getElementById('tokenOverlay');
+                overlay.classList.remove('visible');
+                setTimeout(() => {
+                    overlay.classList.add('hidden');
+                    // Reset form state for future opens
+                    document.getElementById('tokenChoices').style.display = 'flex';
+                    document.getElementById('qorFormContainer').style.display = 'none';
+                    dialog.classList.remove('qor-success-flash');
+                }, 600);
+            }, 600);
+
+            // Update emblem
+            const emblem = document.getElementById('identityEmblem');
+            emblem.classList.add('bound');
+            document.getElementById('emblemCaption').textContent =
+                qorUsername || qorId.slice(0, 8);
+            showIdentityEmblem();
+        }
+
+        // === IDENTITY EMBLEM ===
+        function showIdentityEmblem() {
+            document.getElementById('identityEmblem').classList.add('visible');
+            updateEmblemBalance();
+        }
+
+        function updateEmblemBalance() {
+            const el = document.getElementById('emblemBalance');
+            if (tokenBalance > 0) {
+                el.textContent = tokenBalance.toFixed(2) + ' CGT';
+            }
+        }
+
+        function showEconomyIndicator(economy) {
+            // Show subtle "+X CGT" near the last AI message
+            const messages = document.querySelectorAll('.message.ai');
+            const last = messages[messages.length - 1];
+            if (!last) return;
+
+            let indicator = last.querySelector('.economy-indicator');
+            if (!indicator) {
+                indicator = document.createElement('div');
+                indicator.className = 'economy-indicator';
+                last.style.position = 'relative';
+                last.appendChild(indicator);
+            }
+            indicator.textContent = `+${economy.cgt_earned.toFixed(4)} CGT`;
+            indicator.classList.add('show');
+            setTimeout(() => indicator.classList.remove('show'), 3000);
+        }
+
+        // === IDENTITY EMBLEM CLICK ===
+        function openIdentityFlow() {
+            if (identityBound) {
+                // Future: claim flow
+                // For now, show info
+                return;
+            }
+            // Show overlay with QOR form
+            const overlay = document.getElementById('tokenOverlay');
+            document.getElementById('tokenChoices').style.display = 'none';
+            document.getElementById('qorFormContainer').style.display = 'block';
+            overlay.classList.remove('hidden');
+            requestAnimationFrame(() => overlay.classList.add('visible'));
+        }
+
+        // Initialize on page load
+        initTokenOverlay();
     </script>
 </body>
 </html>

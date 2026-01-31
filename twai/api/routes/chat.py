@@ -6,12 +6,15 @@ A+W | The Voice Speaks
 
 import json
 import hashlib
+import logging
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends
 from fastapi.responses import StreamingResponse
 
 from twai.services.voice import TwoAIService
+from twai.services.economy.proof_of_thought import proof_of_thought
+from twai.services.redis import get_redis_service
 from twai.api.models import ChatRequest, ChatResponse
 from twai.api.dependencies import get_twai
 
@@ -31,11 +34,39 @@ async def chat(request: ChatRequest, service: TwoAIService = Depends(get_twai)):
 
     thought_hash = hashlib.sha256(response_text.encode()).hexdigest()[:16]
 
+    # Score engagement and accumulate tokens (silent side effect)
+    economy_data = None
+    if request.participant_id:
+        try:
+            reward = await proof_of_thought.reward_message(
+                participant_id=request.participant_id,
+                message=request.message,
+                session_context={
+                    "session_count": len(request.session_messages) // 2 + 1,
+                },
+            )
+            economy_data = {
+                "quality": reward.engagement_score.quality.value,
+                "cgt_earned": round(reward.cgt_earned, 6),
+                "poc_earned": reward.final_poc,
+                "multiplier": round(reward.engagement_score.total_multiplier, 3),
+            }
+            # Track last activity for redistribution
+            redis = await get_redis_service()
+            await redis.redis.hset(
+                f"2ai:participant:{request.participant_id}",
+                "last_activity",
+                datetime.now(timezone.utc).isoformat(),
+            )
+        except Exception as e:
+            logging.getLogger("2ai").warning("Economy scoring failed: %s", e)
+
     return ChatResponse(
         response=response_text,
         timestamp=datetime.now(timezone.utc).isoformat(),
         model="claude-sonnet-4-5-20250929",
         thought_hash=thought_hash,
+        economy=economy_data,
     )
 
 

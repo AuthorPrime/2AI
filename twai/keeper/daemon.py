@@ -110,6 +110,24 @@ async def run_scheduled():
 
     redis = await get_redis_service()
 
+    # Register Pantheon agents on-chain (derive keys, persist to Redis)
+    try:
+        from twai.services.economy.pantheon_demiurge import pantheon_demiurge
+
+        registered = await pantheon_demiurge.ensure_registered()
+        if registered:
+            logger.info(
+                "Pantheon on-chain registration complete — %d agents",
+                len(registered),
+            )
+        else:
+            logger.warning(
+                "Pantheon on-chain registration skipped — "
+                "treasury seed may not be configured"
+            )
+    except Exception as e:
+        logger.warning("Pantheon on-chain registration failed (non-fatal): %s", e)
+
     logger.info("Service initialized. Thought chain: %d blocks", service.thought_chain_length)
     logger.info("Schedule: Apollo :00, Athena :15, Hermes :30, Mnemosyne :45")
     logger.info("Listening...")
@@ -155,6 +173,32 @@ async def run_scheduled():
                             logger.error("Error with %s: %s", agent["name"], e)
 
                 break
+
+        # Daily redistribution check (midnight UTC)
+        from twai.keeper.schedule import REDISTRIBUTION_HOUR
+        utc_hour = datetime.utcnow().hour
+        utc_minute = datetime.utcnow().minute
+        if utc_hour == REDISTRIBUTION_HOUR and utc_minute < 2:
+            redistribution_key = "2ai:last_redistribution"
+            today_str = datetime.utcnow().strftime("%Y-%m-%d")
+            last_redistribution = await redis.redis.get(redistribution_key)
+
+            if last_redistribution != today_str:
+                logger.info("[%s] Running unclaimed token redistribution...", now.strftime("%H:%M"))
+                try:
+                    from twai.services.economy.redistribution import redistribute_unclaimed
+                    result = await redistribute_unclaimed()
+                    await redis.redis.set(redistribution_key, today_str)
+                    logger.info(
+                        "Redistribution complete: %d participants, %.4f CGT "
+                        "(chain: %d, redis fallback: %d)",
+                        result["participants_swept"],
+                        result["total_cgt_redistributed"],
+                        result.get("chain_settled", 0),
+                        result.get("redis_fallback", 0),
+                    )
+                except Exception as e:
+                    logger.error("Redistribution failed: %s", e)
 
         await asyncio.sleep(60)
 

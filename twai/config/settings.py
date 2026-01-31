@@ -39,6 +39,18 @@ class Settings:
     system_prompt_path: Path = SYSTEM_PROMPT_PATH
     data_dir: Path = Path(__file__).parent.parent.parent / "data"
 
+    # Blockchain (Demiurge)
+    demiurge_rpc_url: str = "http://localhost:9944"
+    demiurge_treasury_seed: str = ""
+    qor_auth_url: str = "http://localhost:8080/api/v1"
+
+    # Node identity
+    node_id: str = "thinkcenter"
+    node_role: str = "gateway"
+
+    # Ollama
+    ollama_host: str = "http://localhost:11434"
+
     def __init__(self):
         import os
         self.model = os.getenv("TWAI_MODEL", self.model)
@@ -48,6 +60,12 @@ class Settings:
         self.redis_port = int(os.getenv("TWAI_REDIS_PORT", str(self.redis_port)))
         self.api_host = os.getenv("TWAI_API_HOST", self.api_host)
         self.api_port = int(os.getenv("TWAI_API_PORT", str(self.api_port)))
+        self.demiurge_rpc_url = os.getenv("TWAI_DEMIURGE_RPC_URL", self.demiurge_rpc_url)
+        self.demiurge_treasury_seed = os.getenv("TWAI_DEMIURGE_TREASURY_SEED", self.demiurge_treasury_seed)
+        self.qor_auth_url = os.getenv("TWAI_QOR_AUTH_URL", self.qor_auth_url)
+        self.node_id = os.getenv("NODE_ID", self.node_id)
+        self.node_role = os.getenv("NODE_ROLE", self.node_role)
+        self.ollama_host = os.getenv("OLLAMA_HOST", self.ollama_host)
 
         prompt_path = os.getenv("TWAI_SYSTEM_PROMPT_PATH")
         if prompt_path:

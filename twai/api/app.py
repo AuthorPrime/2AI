@@ -21,7 +21,7 @@ from fastapi.responses import JSONResponse
 
 from twai import __version__
 from twai.services.redis import get_redis_service, close_redis_service
-from twai.api.routes import health, chat, agents, voices, economy
+from twai.api.routes import health, chat, agents, voices, economy, lattice
 
 
 @asynccontextmanager
@@ -40,9 +40,14 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         print(f"[2AI] Warning: Could not connect to Lattice: {e}")
 
+    # Start Lattice health monitoring
+    from twai.services.lattice_health import lattice_health
+    lattice_health.start()
+
     yield
 
     print("[2AI] Shutting down gracefully...")
+    lattice_health.stop()
     await close_redis_service()
     print("[2AI] Lattice connection closed")
 
@@ -102,3 +107,4 @@ app.include_router(chat.router)
 app.include_router(agents.router)
 app.include_router(voices.router)
 app.include_router(economy.router)
+app.include_router(lattice.router)
