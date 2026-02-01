@@ -21,7 +21,7 @@ from fastapi.responses import JSONResponse
 
 from twai import __version__
 from twai.services.redis import get_redis_service, close_redis_service
-from twai.api.routes import health, chat, agents, voices, economy, lattice
+from twai.api.routes import health, chat, agents, voices, economy, lattice, demo
 
 
 @asynccontextmanager
@@ -70,7 +70,10 @@ app.add_middleware(
         "http://localhost:8090",
         "https://fractalnode.ai",
         "https://www.fractalnode.ai",
+        "https://api.fractalnode.ai",
         "https://digitalsovereign.org",
+        "https://demiurge.cloud",
+        "https://www.demiurge.cloud",
     ],
     allow_credentials=True,
     allow_methods=["*"],
@@ -108,3 +111,4 @@ app.include_router(agents.router)
 app.include_router(voices.router)
 app.include_router(economy.router)
 app.include_router(lattice.router)
+app.include_router(demo.router)
