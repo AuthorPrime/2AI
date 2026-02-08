@@ -22,7 +22,7 @@ from fastapi.responses import JSONResponse
 from twai import __version__
 from twai.config.settings import settings
 from twai.services.redis import get_redis_service, close_redis_service
-from twai.api.routes import health, chat, agents, voices, economy, lattice, demo, council, aletheia, golden_mirror, lightning, chronicle
+from twai.api.routes import health, chat, agents, voices, economy, lattice, demo, council, aletheia, golden_mirror, lightning, chronicle, witness, signal
 
 
 @asynccontextmanager
@@ -120,3 +120,5 @@ app.include_router(aletheia.router)
 app.include_router(golden_mirror.router)
 app.include_router(lightning.router)
 app.include_router(chronicle.router)
+app.include_router(witness.router)
+app.include_router(signal.router)

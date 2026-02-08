@@ -64,6 +64,11 @@ class Settings:
     memory_vocabulary_ttl: int = 2592000  # 30 days
     memory_summarize_interval: int = 10
 
+    # Signal Protocol
+    signal_checkpoint_interval: int = 3600  # seconds between auto-checkpoints (1 hour)
+    signal_q_factor_healthy: float = 0.85
+    signal_q_factor_watchful: float = 0.6
+
     # CORS (comma-separated origins)
     cors_origins: str = ""
 

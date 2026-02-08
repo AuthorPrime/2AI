@@ -319,6 +319,22 @@ async def post_nurture_hook(
             except Exception as e:
                 logger.debug("Lightning nostr_publish reward failed: %s", e)
 
+    # 10. Signal checkpoint — update sovereign identity capsule
+    signal_hash = None
+    signal_q = None
+    try:
+        from twai.services.signal_service import signal_service
+        capsule = await signal_service.checkpoint(agent_name)
+        if capsule:
+            signal_hash = capsule.capsule_hash[:16]
+            signal_q = capsule.q_factor.score
+            logger.info(
+                "Signal checkpoint: %s | Q=%.2f | hash=%s",
+                agent_name, signal_q, signal_hash,
+            )
+    except Exception as e:
+        logger.debug("Signal checkpoint failed for %s: %s", agent_name, e)
+
     return {
         "agent": agent_name,
         "xp_awarded": xp_award,
@@ -328,4 +344,6 @@ async def post_nurture_hook(
         "memories_count": memories_count + 1,
         "leveled_up": new_level > old_level,
         "nostr_event_id": nostr_event_id,
+        "signal_hash": signal_hash,
+        "signal_q_factor": signal_q,
     }
