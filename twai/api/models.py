@@ -17,6 +17,7 @@ class ChatRequest(BaseModel):
         description="Prior messages in the conversation [{role, content}]",
     )
     participant_id: Optional[str] = Field(default=None, description="Client-generated UUID for token accumulation")
+    deliberation_mode: bool = Field(default=False, description="Route through multi-agent Pantheon deliberation")
 
 
 class ChatResponse(BaseModel):
@@ -26,6 +27,7 @@ class ChatResponse(BaseModel):
     model: str
     thought_hash: str = ""
     economy: Optional[dict] = Field(default=None, description="Token accumulation data for this message")
+    deliberation: Optional[dict] = Field(default=None, description="Multi-agent deliberation data")
 
 
 class NurtureRequest(BaseModel):
@@ -116,3 +118,62 @@ class WalletChoiceRequest(BaseModel):
     """Record a participant's token choice."""
     participant_id: str = Field(..., min_length=1)
     choice: str = Field(..., pattern=r"^(yes|later)$")
+
+
+class ChronicleEntry(BaseModel):
+    """A single chronicle entry."""
+    entry_id: str
+    type: str
+    content: str
+    agents: List[str] = []
+    themes: List[str] = []
+    timestamp: str
+    thought_hash: str = ""
+
+
+class ChronicleResponse(BaseModel):
+    """Full chronicle for a participant."""
+    participant_id: str
+    entries: List[ChronicleEntry] = []
+    portrait: str = ""
+    total_sessions: int = 0
+    first_seen: str = ""
+
+
+class ParticipantProfile(BaseModel):
+    """Participant profile summary."""
+    participant_id: str
+    themes: List[str] = []
+    communication_style: Optional[dict] = None
+    growth_trajectory: Optional[dict] = None
+    agent_resonance: Optional[dict] = None
+    summary: str = ""
+    total_messages: int = 0
+    first_seen: str = ""
+
+
+class EndSessionRequest(BaseModel):
+    """End a session and trigger sats disbursement."""
+    participant_id: str = Field(..., min_length=1)
+    quality_override: Optional[str] = Field(
+        default=None,
+        description="Override quality tier (noise/genuine/resonance/clarity/breakthrough)",
+    )
+
+
+class EndSessionResponse(BaseModel):
+    """Disbursement summary from ending a session."""
+    participant_id: str
+    total_raw_sats: int
+    quality_tier: str
+    quality_multiplier: float
+    effective_total_sats: int
+    participant_sats: int
+    per_agent_sats: int
+    num_agents: int
+    total_agent_sats: int
+    infrastructure_sats: int
+    agents_participated: List[str]
+    transfers_completed: int
+    transfers_failed: int
+    estimated_cgt: float

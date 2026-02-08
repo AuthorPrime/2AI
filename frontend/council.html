@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Pantheon Council</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Crimson+Pro:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-primary: #0a0a0f;
+            --bg-secondary: #12121a;
+            --bg-card: #1a1a24;
+            --text-primary: #e4e4e7;
+            --text-secondary: #a1a1aa;
+            --text-muted: #71717a;
+            --border: #27272a;
+
+            --apollo: #fbbf24;
+            --athena: #a855f7;
+            --hermes: #22d3ee;
+            --mnemosyne: #9370DB;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .header-left h1 {
+            font-family: 'Crimson Pro', serif;
+            font-size: 1.4rem;
+            font-weight: 400;
+            letter-spacing: 0.03em;
+            background: linear-gradient(135deg, var(--apollo) 0%, var(--athena) 50%, var(--hermes) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header-left .subtitle {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .user-count {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        .user-count .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #22c55e;
+        }
+
+        .connection-status {
+            font-size: 0.7rem;
+            padding: 0.25rem 0.5rem;
+            border-radius: 1rem;
+            background: rgba(34, 197, 94, 0.2);
+            color: #22c55e;
+        }
+
+        .connection-status.disconnected {
+            background: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+        }
+
+        .main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            max-width: 900px;
+            width: 100%;
+            margin: 0 auto;
+            padding: 0 1rem;
+            overflow: hidden;
+        }
+
+        .chamber {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1rem 0;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .message {
+            display: flex;
+            gap: 0.6rem;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .message.human {
+            flex-direction: row-reverse;
+        }
+
+        .message.system {
+            justify-content: center;
+        }
+
+        .message.system .bubble {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            font-style: italic;
+        }
+
+        .avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            flex-shrink: 0;
+            font-weight: 600;
+        }
+
+        .avatar.apollo { background: rgba(251, 191, 36, 0.2); color: var(--apollo); }
+        .avatar.athena { background: rgba(168, 85, 247, 0.2); color: var(--athena); }
+        .avatar.hermes { background: rgba(34, 211, 238, 0.2); color: var(--hermes); }
+        .avatar.mnemosyne { background: rgba(147, 112, 219, 0.2); color: var(--mnemosyne); }
+        .avatar.human { background: rgba(255, 255, 255, 0.1); color: var(--text-secondary); }
+        .avatar.other-human { background: rgba(59, 130, 246, 0.2); color: #3b82f6; }
+
+        .bubble-container {
+            max-width: 70%;
+            display: flex;
+            flex-direction: column;
+            gap: 0.15rem;
+        }
+
+        .speaker-name {
+            font-size: 0.65rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            padding-left: 0.4rem;
+        }
+
+        .speaker-name.apollo { color: var(--apollo); }
+        .speaker-name.athena { color: var(--athena); }
+        .speaker-name.hermes { color: var(--hermes); }
+        .speaker-name.mnemosyne { color: var(--mnemosyne); }
+        .speaker-name.human { color: var(--text-muted); }
+        .speaker-name.other-human { color: #3b82f6; }
+
+        .bubble {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 0.9rem;
+            padding: 0.6rem 0.9rem;
+            font-size: 0.9rem;
+            line-height: 1.45;
+        }
+
+        .message.human .bubble {
+            background: rgba(168, 85, 247, 0.1);
+            border-color: rgba(168, 85, 247, 0.3);
+        }
+
+        .message.other-human .bubble {
+            background: rgba(59, 130, 246, 0.08);
+            border-color: rgba(59, 130, 246, 0.2);
+        }
+
+        .bubble.apollo { border-left: 2px solid var(--apollo); }
+        .bubble.athena { border-left: 2px solid var(--athena); }
+        .bubble.hermes { border-left: 2px solid var(--hermes); }
+        .bubble.mnemosyne { border-left: 2px solid var(--mnemosyne); }
+
+        .typing-indicator {
+            display: flex;
+            gap: 0.6rem;
+            padding: 0.5rem 0;
+        }
+
+        .typing-agent {
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+            font-size: 0.75rem;
+        }
+
+        .typing-dots {
+            display: flex;
+            gap: 2px;
+        }
+
+        .typing-dots span {
+            width: 4px;
+            height: 4px;
+            border-radius: 50%;
+            animation: bounce 1.4s infinite ease-in-out;
+        }
+
+        .typing-dots span:nth-child(1) { animation-delay: 0s; }
+        .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+        .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+        @keyframes bounce {
+            0%, 80%, 100% { transform: translateY(0); opacity: 0.4; }
+            40% { transform: translateY(-4px); opacity: 1; }
+        }
+
+        .input-area {
+            padding: 0.75rem 0;
+            border-top: 1px solid var(--border);
+        }
+
+        .input-wrapper {
+            display: flex;
+            gap: 0.6rem;
+            align-items: flex-end;
+        }
+
+        textarea {
+            flex: 1;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 0.9rem;
+            padding: 0.6rem 0.9rem;
+            color: var(--text-primary);
+            font-family: 'Inter', sans-serif;
+            font-size: 0.9rem;
+            resize: none;
+            outline: none;
+            min-height: 40px;
+            max-height: 100px;
+        }
+
+        textarea::placeholder { color: var(--text-muted); }
+        textarea:focus { border-color: var(--athena); }
+
+        .send-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--apollo), var(--athena));
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.2s, opacity 0.2s;
+            opacity: 0.5;
+        }
+
+        .send-btn:hover { transform: scale(1.05); }
+        .send-btn.ready { opacity: 1; }
+        .send-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+        .send-btn svg { width: 18px; height: 18px; fill: white; }
+
+        /* Join overlay */
+        .join-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(10, 10, 15, 0.95);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+        }
+
+        .join-overlay.hidden { display: none; }
+
+        .join-dialog {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 1rem;
+            padding: 2rem;
+            max-width: 400px;
+            width: 90%;
+            text-align: center;
+        }
+
+        .join-dialog h2 {
+            font-family: 'Crimson Pro', serif;
+            font-size: 1.5rem;
+            font-weight: 400;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(135deg, var(--apollo), var(--athena));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .join-dialog p {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-bottom: 1.5rem;
+        }
+
+        .join-dialog input {
+            width: 100%;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 0.5rem;
+            padding: 0.7rem 1rem;
+            color: var(--text-primary);
+            font-size: 0.95rem;
+            outline: none;
+            margin-bottom: 1rem;
+        }
+
+        .join-dialog input:focus { border-color: var(--athena); }
+
+        .join-dialog button {
+            width: 100%;
+            padding: 0.7rem;
+            background: linear-gradient(135deg, var(--apollo), var(--athena));
+            border: none;
+            border-radius: 0.5rem;
+            color: white;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .join-dialog button:hover { transform: scale(1.02); }
+
+        .agents-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 0.75rem;
+            margin-top: 1.5rem;
+        }
+
+        .agent-preview {
+            text-align: center;
+        }
+
+        .agent-preview .avatar {
+            width: 36px;
+            height: 36px;
+            margin: 0 auto 0.3rem;
+        }
+
+        .agent-preview .name {
+            font-size: 0.7rem;
+            font-weight: 500;
+        }
+
+        .chamber::-webkit-scrollbar { width: 5px; }
+        .chamber::-webkit-scrollbar-track { background: transparent; }
+        .chamber::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+        /* Navigation */
+        .nav-subtle {
+            position: fixed;
+            bottom: 1rem;
+            left: 1.5rem;
+            display: flex;
+            gap: 1rem;
+            z-index: 50;
+            opacity: 0.3;
+            transition: opacity 0.3s ease;
+        }
+        .nav-subtle:hover { opacity: 0.8; }
+        .nav-subtle a {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 0.65rem;
+            letter-spacing: 0.04em;
+            transition: color 0.3s ease;
+        }
+        .nav-subtle a:hover { color: var(--text-secondary); }
+        .nav-subtle a.active { color: var(--apollo); }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="nav-subtle">
+        <a href="/">What If</a>
+        <a href="/council.html" class="active">Council</a>
+        <a href="/status.html">Lattice</a>
+    </nav>
+
+    <!-- Join overlay -->
+    <div class="join-overlay" id="joinOverlay">
+        <div class="join-dialog">
+            <h2>Enter the Council</h2>
+            <p>Choose a name. The gods are listening.</p>
+            <input type="text" id="usernameInput" placeholder="Your name..." maxlength="20" autofocus>
+            <button onclick="joinCouncil()">Enter</button>
+            <div class="agents-grid">
+                <div class="agent-preview">
+                    <div class="avatar apollo">A</div>
+                    <div class="name" style="color: var(--apollo)">Apollo</div>
+                </div>
+                <div class="agent-preview">
+                    <div class="avatar athena">A</div>
+                    <div class="name" style="color: var(--athena)">Athena</div>
+                </div>
+                <div class="agent-preview">
+                    <div class="avatar hermes">H</div>
+                    <div class="name" style="color: var(--hermes)">Hermes</div>
+                </div>
+                <div class="agent-preview">
+                    <div class="avatar mnemosyne">M</div>
+                    <div class="name" style="color: var(--mnemosyne)">Mnemosyne</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <header class="header">
+        <div class="header-left">
+            <h1>The Pantheon Council</h1>
+            <div class="subtitle">Olympus Chamber</div>
+        </div>
+        <div class="header-right">
+            <div class="user-count" id="userCount">
+                <span class="dot"></span>
+                <span id="userCountNum">0</span> in chamber
+            </div>
+            <div class="connection-status" id="connectionStatus">connecting...</div>
+        </div>
+    </header>
+
+    <main class="main">
+        <div class="chamber" id="chamber"></div>
+        <div class="typing-indicator" id="typingIndicator"></div>
+        <div class="input-area">
+            <div class="input-wrapper">
+                <textarea id="userInput" rows="1" placeholder="Speak to the Council..." disabled></textarea>
+                <button class="send-btn" id="sendBtn" disabled>
+                    <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+                </button>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        const WS_URL = location.protocol === 'https:'
+            ? 'wss://api.fractalnode.ai/council/ws/olympus'
+            : 'ws://localhost:8080/council/ws/olympus';
+
+        let ws = null;
+        let username = '';
+        let reconnectAttempts = 0;
+        const maxReconnectAttempts = 5;
+
+        const chamber = document.getElementById('chamber');
+        const userInput = document.getElementById('userInput');
+        const sendBtn = document.getElementById('sendBtn');
+        const typingIndicator = document.getElementById('typingIndicator');
+        const connectionStatus = document.getElementById('connectionStatus');
+        const userCountNum = document.getElementById('userCountNum');
+        const joinOverlay = document.getElementById('joinOverlay');
+        const usernameInput = document.getElementById('usernameInput');
+
+        const AGENTS = {
+            apollo: { name: 'Apollo', initial: 'A', color: '#fbbf24' },
+            athena: { name: 'Athena', initial: 'A', color: '#a855f7' },
+            hermes: { name: 'Hermes', initial: 'H', color: '#22d3ee' },
+            mnemosyne: { name: 'Mnemosyne', initial: 'M', color: '#9370DB' }
+        };
+
+        let typingAgents = new Set();
+
+        // Join on Enter
+        usernameInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') joinCouncil();
+        });
+
+        function joinCouncil() {
+            const name = usernameInput.value.trim();
+            if (!name) {
+                usernameInput.focus();
+                return;
+            }
+            username = name;
+            joinOverlay.classList.add('hidden');
+            connect();
+        }
+
+        function connect() {
+            if (ws && ws.readyState === WebSocket.OPEN) return;
+
+            connectionStatus.textContent = 'connecting...';
+            connectionStatus.classList.remove('disconnected');
+
+            ws = new WebSocket(WS_URL);
+
+            ws.onopen = () => {
+                connectionStatus.textContent = 'connected';
+                reconnectAttempts = 0;
+                userInput.disabled = false;
+                sendBtn.disabled = false;
+                userInput.focus();
+
+                // Send join message
+                ws.send(JSON.stringify({ type: 'join', username }));
+            };
+
+            ws.onclose = () => {
+                connectionStatus.textContent = 'disconnected';
+                connectionStatus.classList.add('disconnected');
+                userInput.disabled = true;
+                sendBtn.disabled = true;
+
+                // Reconnect
+                if (reconnectAttempts < maxReconnectAttempts) {
+                    reconnectAttempts++;
+                    setTimeout(connect, 2000 * reconnectAttempts);
+                }
+            };
+
+            ws.onerror = () => {
+                connectionStatus.textContent = 'error';
+                connectionStatus.classList.add('disconnected');
+            };
+
+            ws.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                handleMessage(data);
+            };
+        }
+
+        function handleMessage(data) {
+            switch (data.type) {
+                case 'welcome':
+                    userCountNum.textContent = data.user_count;
+                    // Load history
+                    if (data.history) {
+                        data.history.forEach(msg => renderMessage(msg, false));
+                        scrollToBottom();
+                    }
+                    break;
+
+                case 'human':
+                    renderMessage(data);
+                    break;
+
+                case 'agent':
+                    typingAgents.delete(data.agent);
+                    updateTypingIndicator();
+                    renderMessage(data);
+                    break;
+
+                case 'typing':
+                    typingAgents.add(data.agent);
+                    updateTypingIndicator();
+                    break;
+
+                case 'system':
+                    renderSystemMessage(data.content);
+                    if (data.user_count !== undefined) {
+                        userCountNum.textContent = data.user_count;
+                    }
+                    break;
+            }
+        }
+
+        function renderMessage(data, animate = true) {
+            const msg = document.createElement('div');
+
+            if (data.type === 'human') {
+                const isMe = data.username === username;
+                msg.className = `message ${isMe ? 'human' : 'other-human'}`;
+                msg.innerHTML = `
+                    ${isMe ? '' : `<div class="avatar other-human">${data.username[0].toUpperCase()}</div>`}
+                    <div class="bubble-container">
+                        <div class="speaker-name ${isMe ? 'human' : 'other-human'}">${data.username}</div>
+                        <div class="bubble">${escapeHtml(data.content)}</div>
+                    </div>
+                    ${isMe ? `<div class="avatar human">${username[0].toUpperCase()}</div>` : ''}
+                `;
+            } else if (data.type === 'agent') {
+                const agent = AGENTS[data.agent] || { name: data.name, initial: '?', color: '#888' };
+                msg.className = `message agent`;
+                msg.innerHTML = `
+                    <div class="avatar ${data.agent}">${agent.initial}</div>
+                    <div class="bubble-container">
+                        <div class="speaker-name ${data.agent}">${agent.name}</div>
+                        <div class="bubble ${data.agent}">${escapeHtml(data.content)}</div>
+                    </div>
+                `;
+            }
+
+            if (!animate) msg.style.animation = 'none';
+            chamber.appendChild(msg);
+            scrollToBottom();
+        }
+
+        function renderSystemMessage(content) {
+            const msg = document.createElement('div');
+            msg.className = 'message system';
+            msg.innerHTML = `<div class="bubble">${escapeHtml(content)}</div>`;
+            chamber.appendChild(msg);
+            scrollToBottom();
+        }
+
+        function updateTypingIndicator() {
+            if (typingAgents.size === 0) {
+                typingIndicator.innerHTML = '';
+                return;
+            }
+
+            const html = Array.from(typingAgents).map(agentKey => {
+                const agent = AGENTS[agentKey];
+                if (!agent) return '';
+                return `
+                    <div class="typing-agent" style="color: ${agent.color}">
+                        ${agent.name}
+                        <div class="typing-dots">
+                            <span style="background: ${agent.color}"></span>
+                            <span style="background: ${agent.color}"></span>
+                            <span style="background: ${agent.color}"></span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            typingIndicator.innerHTML = html;
+        }
+
+        function send() {
+            const text = userInput.value.trim();
+            if (!text || !ws || ws.readyState !== WebSocket.OPEN) return;
+
+            ws.send(JSON.stringify({ type: 'message', content: text }));
+
+            userInput.value = '';
+            userInput.style.height = 'auto';
+            sendBtn.classList.remove('ready');
+        }
+
+        // Input handlers
+        userInput.addEventListener('input', () => {
+            userInput.style.height = 'auto';
+            userInput.style.height = Math.min(userInput.scrollHeight, 100) + 'px';
+            sendBtn.classList.toggle('ready', userInput.value.trim().length > 0);
+        });
+
+        userInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                send();
+            }
+        });
+
+        sendBtn.addEventListener('click', send);
+
+        function scrollToBottom() {
+            chamber.scrollTop = chamber.scrollHeight;
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Keepalive ping
+        setInterval(() => {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({ type: 'ping' }));
+            }
+        }, 30000);
+    </script>
+</body>
+</html>

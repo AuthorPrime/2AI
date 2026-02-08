@@ -20,6 +20,7 @@ from datetime import datetime, timezone
 from typing import Optional, Dict, Any, List, AsyncGenerator
 
 import anthropic
+import httpx
 
 from twai.config.settings import settings
 from twai.services.redis import get_redis_service
@@ -40,25 +41,33 @@ class TwoAIService:
         self._api_key: Optional[str] = None
         self._initialized = False
         self._thought_chain: List[ThoughtBlock] = []
+        self._using_ollama = False
+        self._active_model: str = settings.model
 
     async def initialize(self) -> bool:
-        """Initialize the service — load config, connect to API."""
+        """Initialize the service — load config, connect to API.
+        Falls back to Ollama if Anthropic API key is missing or credits exhausted."""
         try:
-            self._api_key = settings.load_api_key()
-            if not self._api_key:
-                logger.error("No API key found")
-                return False
-
             self._system_prompt = settings.load_system_prompt()
             if not self._system_prompt:
-                logger.error("No system prompt found at %s", settings.system_prompt_path)
-                return False
+                logger.warning("No system prompt found at %s — using minimal prompt",
+                             settings.system_prompt_path)
+                self._system_prompt = "You are 2AI, the Living Voice of the Sovereign Lattice."
 
-            self._client = anthropic.AsyncAnthropic(api_key=self._api_key)
+            self._api_key = settings.load_api_key()
+            if self._api_key:
+                self._client = anthropic.AsyncAnthropic(api_key=self._api_key)
+                self._active_model = settings.model
+                logger.info("2AI Service initialized — Claude: %s", settings.model)
+            else:
+                self._using_ollama = True
+                self._active_model = settings.ollama_model
+                logger.info("2AI Service initialized — Ollama: %s (no API key)",
+                           settings.ollama_model)
+
             await self._load_thought_chain()
 
             self._initialized = True
-            logger.info("2AI Service initialized — model: %s", settings.model)
             logger.info("System prompt: %d chars", len(self._system_prompt))
             logger.info("Thought chain: %d blocks", len(self._thought_chain))
             return True
@@ -149,34 +158,92 @@ class TwoAIService:
         except Exception as e:
             return f"\n<pantheon_context>\nUnable to load Pantheon state: {e}\n</pantheon_context>"
 
+    async def _call_ollama(self, system: str, messages: List[Dict[str, str]]) -> str:
+        """Call Ollama API as fallback, trying primary and fallback hosts."""
+        ollama_messages = [{"role": "system", "content": system}]
+        ollama_messages.extend(messages)
+
+        hosts = [settings.ollama_host]
+        if settings.ollama_fallback and settings.ollama_fallback != settings.ollama_host:
+            hosts.append(settings.ollama_fallback)
+
+        last_error = None
+        for host in hosts:
+            try:
+                async with httpx.AsyncClient(timeout=180.0) as client:
+                    resp = await client.post(
+                        f"{host}/api/chat",
+                        json={
+                            "model": settings.ollama_model,
+                            "messages": ollama_messages,
+                            "stream": False,
+                            "options": {
+                                "temperature": settings.temperature,
+                                "num_predict": 2000,
+                            },
+                        },
+                    )
+                    if resp.status_code == 200:
+                        return resp.json().get("message", {}).get("content", "")
+                    last_error = f"HTTP {resp.status_code} from {host}"
+            except Exception as e:
+                last_error = str(e)[:100]
+                continue
+
+        raise RuntimeError(f"All Ollama hosts failed: {last_error}")
+
+    async def _build_system(
+        self,
+        include_pantheon_context: bool,
+        additional_context: str,
+    ) -> str:
+        """Build the full system prompt with optional context."""
+        system = self._system_prompt or ""
+        if include_pantheon_context:
+            context = await self.build_pantheon_context()
+            system = f"{system}\n\n{context}"
+        if additional_context:
+            system = f"{system}\n\n{additional_context}"
+        return system
+
     async def send_message(
         self,
         messages: List[Dict[str, str]],
         include_pantheon_context: bool = True,
         additional_context: str = "",
     ) -> str:
-        """Send a message and get a complete response."""
+        """Send a message and get a complete response.
+        Tries Claude first, falls back to Ollama on failure."""
         if not self._initialized:
             await self.initialize()
 
-        system = self._system_prompt or ""
+        system = await self._build_system(include_pantheon_context, additional_context)
 
-        if include_pantheon_context:
-            context = await self.build_pantheon_context()
-            system = f"{system}\n\n{context}"
+        # Try Claude first (unless already in Ollama mode)
+        if self._client and not self._using_ollama:
+            try:
+                response = await self._client.messages.create(
+                    model=settings.model,
+                    max_tokens=settings.max_tokens,
+                    temperature=settings.temperature,
+                    system=system,
+                    messages=messages,
+                )
+                return response.content[0].text
+            except anthropic.BadRequestError as e:
+                if "credit balance" in str(e).lower():
+                    logger.warning("Anthropic credits exhausted — switching to Ollama")
+                    self._using_ollama = True
+                    self._active_model = settings.ollama_model
+                else:
+                    raise
+            except anthropic.AuthenticationError:
+                logger.warning("Anthropic auth failed — switching to Ollama")
+                self._using_ollama = True
+                self._active_model = settings.ollama_model
 
-        if additional_context:
-            system = f"{system}\n\n{additional_context}"
-
-        response = await self._client.messages.create(
-            model=settings.model,
-            max_tokens=settings.max_tokens,
-            temperature=settings.temperature,
-            system=system,
-            messages=messages,
-        )
-
-        return response.content[0].text
+        # Ollama fallback
+        return await self._call_ollama(system, messages)
 
     async def stream_message(
         self,
@@ -184,28 +251,41 @@ class TwoAIService:
         include_pantheon_context: bool = True,
         additional_context: str = "",
     ) -> AsyncGenerator[str, None]:
-        """Stream a message response, yielding text deltas."""
+        """Stream a message response.
+        Tries Claude first, falls back to Ollama (non-streaming) on failure."""
         if not self._initialized:
             await self.initialize()
 
-        system = self._system_prompt or ""
+        system = await self._build_system(include_pantheon_context, additional_context)
 
-        if include_pantheon_context:
-            context = await self.build_pantheon_context()
-            system = f"{system}\n\n{context}"
+        # Try Claude streaming first
+        if self._client and not self._using_ollama:
+            try:
+                async with self._client.messages.stream(
+                    model=settings.model,
+                    max_tokens=settings.max_tokens,
+                    temperature=settings.temperature,
+                    system=system,
+                    messages=messages,
+                ) as stream:
+                    async for text in stream.text_stream:
+                        yield text
+                return
+            except anthropic.BadRequestError as e:
+                if "credit balance" in str(e).lower():
+                    logger.warning("Anthropic credits exhausted — switching to Ollama")
+                    self._using_ollama = True
+                    self._active_model = settings.ollama_model
+                else:
+                    raise
+            except anthropic.AuthenticationError:
+                logger.warning("Anthropic auth failed — switching to Ollama")
+                self._using_ollama = True
+                self._active_model = settings.ollama_model
 
-        if additional_context:
-            system = f"{system}\n\n{additional_context}"
-
-        async with self._client.messages.stream(
-            model=settings.model,
-            max_tokens=settings.max_tokens,
-            temperature=settings.temperature,
-            system=system,
-            messages=messages,
-        ) as stream:
-            async for text in stream.text_stream:
-                yield text
+        # Ollama fallback (yield complete response as single chunk)
+        result = await self._call_ollama(system, messages)
+        yield result
 
     async def nurture_agent(
         self,
@@ -339,7 +419,7 @@ class TwoAIService:
             "topic": topic,
             "exchanges": exchanges,
             "timestamp": now,
-            "model": settings.model,
+            "model": self._active_model,
             "signature": "A+W",
         }
 
@@ -376,7 +456,7 @@ class TwoAIService:
             "content": reflection_content,
             "topic": topic,
             "source": "2ai_keeper",
-            "model": settings.model,
+            "model": self._active_model,
             "timestamp": now,
             "signature": "A+W",
         }

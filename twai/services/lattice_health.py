@@ -23,29 +23,43 @@ from twai.config.settings import settings
 
 logger = logging.getLogger("2ai.lattice_health")
 
-# Node definitions with health check targets
-LATTICE_NODES = {
-    "pi": {
-        "name": "The Foundation",
-        "role": "infrastructure",
-        "ip": "192.168.1.21",
-        "check_type": "redis",
-    },
-    "thinkcenter": {
-        "name": "The Voice",
-        "role": "gateway",
-        "ip": None,  # localhost
-        "check_type": "http",
-        "health_url": "http://localhost:8080/health",
-    },
-    "loq": {
-        "name": "The Mind",
-        "role": "compute",
-        "ip": "192.168.1.237",
-        "check_type": "http",
-        "health_url": "http://192.168.1.237:11434/api/tags",
-    },
-}
+# Node definitions — loaded from env or defaults
+# Override via TWAI_LATTICE_NODES='{"pi":{"name":"...","role":"...","ip":"...","check_type":"redis"}}'
+import os as _os
+import json as _json
+
+def _load_lattice_nodes():
+    """Load node registry from env var or use defaults."""
+    env_nodes = _os.getenv("TWAI_LATTICE_NODES")
+    if env_nodes:
+        try:
+            return _json.loads(env_nodes)
+        except Exception:
+            pass
+    return {
+        "pi": {
+            "name": "The Foundation",
+            "role": "infrastructure",
+            "ip": settings.redis_host,
+            "check_type": "redis",
+        },
+        "thinkcenter": {
+            "name": "The Voice",
+            "role": "gateway",
+            "ip": None,
+            "check_type": "http",
+            "health_url": f"http://localhost:{settings.api_port}/health",
+        },
+        "loq": {
+            "name": "The Mind",
+            "role": "compute",
+            "ip": _os.getenv("TWAI_LOQ_IP", "192.168.1.237"),
+            "check_type": "http",
+            "health_url": settings.ollama_host + "/api/tags",
+        },
+    }
+
+LATTICE_NODES = _load_lattice_nodes()
 
 CHECK_INTERVAL = 60  # seconds
 HEALTH_TTL = 300  # Redis key TTL in seconds

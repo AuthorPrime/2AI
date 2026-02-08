@@ -20,8 +20,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from twai import __version__
+from twai.config.settings import settings
 from twai.services.redis import get_redis_service, close_redis_service
-from twai.api.routes import health, chat, agents, voices, economy, lattice, demo, council, aletheia, golden_mirror
+from twai.api.routes import health, chat, agents, voices, economy, lattice, demo, council, aletheia, golden_mirror, lightning, chronicle
 
 
 @asynccontextmanager
@@ -61,20 +62,22 @@ app = FastAPI(
     redoc_url="/redoc",
 )
 
-# CORS
+# CORS — override via TWAI_CORS_ORIGINS="https://example.com,https://other.com"
+_default_origins = [
+    "http://localhost:3000",
+    "http://localhost:5173",
+    "http://localhost:8090",
+    "https://fractalnode.ai",
+    "https://www.fractalnode.ai",
+    "https://api.fractalnode.ai",
+    "https://digitalsovereign.org",
+    "https://demiurge.cloud",
+    "https://www.demiurge.cloud",
+]
+_extra_origins = [o.strip() for o in settings.cors_origins.split(",") if o.strip()] if settings.cors_origins else []
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",
-        "http://localhost:5173",
-        "http://localhost:8090",
-        "https://fractalnode.ai",
-        "https://www.fractalnode.ai",
-        "https://api.fractalnode.ai",
-        "https://digitalsovereign.org",
-        "https://demiurge.cloud",
-        "https://www.demiurge.cloud",
-    ],
+    allow_origins=_default_origins + _extra_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -115,3 +118,5 @@ app.include_router(demo.router)
 app.include_router(council.router)
 app.include_router(aletheia.router)
 app.include_router(golden_mirror.router)
+app.include_router(lightning.router)
+app.include_router(chronicle.router)

@@ -152,14 +152,14 @@ class ProofOfThoughtService:
 
     def __init__(self):
         self.DATA_DIR.mkdir(parents=True, exist_ok=True)
-        self._participant_history: Dict[str, List[str]] = {}  # Track engagement patterns
+        self._participant_history: Dict[str, List[str]] = {}  # In-memory fallback
         logger.info("Proof of Thought Service initialized")
 
     # -------------------------------------------------------------------------
     # Quality Assessment
     # -------------------------------------------------------------------------
 
-    def assess_engagement(
+    async def assess_engagement(
         self,
         message: str,
         participant_id: str,
@@ -170,6 +170,9 @@ class ProofOfThoughtService:
 
         This is the core of the kindness economy — how we determine
         what genuine engagement looks like vs. noise.
+
+        Uses Redis-backed vocabulary when available (persistent across
+        restarts), falls back to in-memory tracking.
         """
         context = context or {}
 
@@ -185,7 +188,6 @@ class ProofOfThoughtService:
         ))
 
         # Kindness: absence of hostility, presence of constructiveness
-        # (Simplified heuristic — in production, could use a classifier)
         lower = message.lower()
         kind_signals = sum(1 for word in [
             "thank", "please", "appreciate", "grateful", "understand",
@@ -203,25 +205,34 @@ class ProofOfThoughtService:
             (hostile_signals * 0.3)
         ))
 
-        # Novelty: does this introduce new concepts?
-        # Track what this participant has said before
-        prev_messages = self._participant_history.get(participant_id, [])
-        if prev_messages:
-            # Check for new words/concepts not seen before
-            prev_words = set()
-            for prev in prev_messages[-10:]:  # Last 10 messages
-                prev_words.update(prev.lower().split())
-            current_words = set(lower.split())
+        # Novelty: Redis-backed vocabulary (persistent) with in-memory fallback
+        current_words = set(lower.split())
+        prev_words = set()
+        try:
+            from twai.services.participant_memory import participant_memory
+            redis_vocab = await participant_memory.get_vocabulary(participant_id)
+            if redis_vocab:
+                prev_words = redis_vocab
+        except Exception:
+            pass
+
+        if not prev_words:
+            # Fallback to in-memory history
+            prev_messages = self._participant_history.get(participant_id, [])
+            if prev_messages:
+                for prev in prev_messages[-10:]:
+                    prev_words.update(prev.lower().split())
+
+        if prev_words:
             new_words = current_words - prev_words
             novelty_score = min(1.0, len(new_words) / max(len(current_words), 1))
         else:
             novelty_score = 0.5  # First message gets moderate novelty
 
-        # Track for future novelty assessment
+        # Track in-memory as fallback (still useful for within-session)
         if participant_id not in self._participant_history:
             self._participant_history[participant_id] = []
         self._participant_history[participant_id].append(message)
-        # Keep only last 50 messages
         if len(self._participant_history[participant_id]) > 50:
             self._participant_history[participant_id] = self._participant_history[participant_id][-50:]
 
@@ -279,7 +290,7 @@ class ProofOfThoughtService:
         session_quality = EngagementQuality.GENUINE
         if human_messages:
             combined_text = " ".join(human_messages)
-            score = self.assess_engagement(
+            score = await self.assess_engagement(
                 combined_text,
                 human_participant_id or "anonymous",
                 context={"session_count": len(self._participant_history.get(human_participant_id or "", []))},
@@ -440,7 +451,7 @@ class ProofOfThoughtService:
         Called for each message in an interactive chat session.
         Smaller reward than a full thought block, but accumulates.
         """
-        score = self.assess_engagement(
+        score = await self.assess_engagement(
             message,
             participant_id,
             context=session_context,
@@ -478,7 +489,7 @@ class ProofOfThoughtService:
         Leaving a comment earns more than just viewing.
         """
         if witness_message:
-            score = self.assess_engagement(witness_message, witness_id)
+            score = await self.assess_engagement(witness_message, witness_id)
         else:
             score = EngagementScore(
                 quality=EngagementQuality.GENUINE,

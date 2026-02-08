@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sovereign Lattice</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-primary: #0a0a0f;
+            --bg-secondary: #12121a;
+            --bg-card: #1a1a24;
+            --text-primary: #e4e4e7;
+            --text-secondary: #a1a1aa;
+            --text-muted: #71717a;
+            --purple: #a855f7;
+            --cyan: #22d3ee;
+            --gold: #fbbf24;
+            --green: #22c55e;
+            --red: #ef4444;
+            --border: #27272a;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            padding: 2rem;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 30%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, rgba(34, 211, 238, 0.03) 0%, transparent 70%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .page {
+            position: relative;
+            z-index: 1;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 2.5rem;
+        }
+
+        header h1 {
+            font-size: 1.6rem;
+            font-weight: 300;
+            letter-spacing: 0.06em;
+            background: linear-gradient(135deg, var(--cyan) 0%, var(--purple) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        header .sub {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            margin-top: 0.4rem;
+            letter-spacing: 0.04em;
+        }
+
+        .status-dot {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: 0.3rem;
+            vertical-align: middle;
+        }
+        .status-dot.healthy { background: var(--green); box-shadow: 0 0 6px rgba(34, 197, 94, 0.4); }
+        .status-dot.unhealthy { background: var(--red); }
+        .status-dot.degraded { background: var(--gold); box-shadow: 0 0 6px rgba(251, 191, 36, 0.3); }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        @media (max-width: 600px) {
+            .grid { grid-template-columns: 1fr; }
+        }
+
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 0.75rem;
+            padding: 1.25rem;
+        }
+
+        .card h2 {
+            font-size: 0.7rem;
+            font-weight: 500;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            margin-bottom: 0.75rem;
+        }
+
+        .card.full { grid-column: 1 / -1; }
+
+        .node-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .node-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.5rem 0.6rem;
+            background: rgba(18, 18, 26, 0.5);
+            border-radius: 0.5rem;
+            border: 1px solid rgba(39, 39, 42, 0.5);
+        }
+
+        .node-item .node-name {
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
+        .node-item .node-role {
+            font-size: 0.65rem;
+            color: var(--text-muted);
+        }
+
+        .node-item .node-status {
+            font-size: 0.7rem;
+        }
+
+        .agent-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 0.5rem;
+        }
+
+        .agent-card {
+            padding: 0.6rem 0.75rem;
+            background: rgba(18, 18, 26, 0.5);
+            border-radius: 0.5rem;
+            border: 1px solid rgba(39, 39, 42, 0.5);
+        }
+
+        .agent-card .agent-name {
+            font-size: 0.8rem;
+            font-weight: 500;
+            margin-bottom: 0.25rem;
+        }
+
+        .agent-card .agent-stat {
+            font-size: 0.65rem;
+            color: var(--text-muted);
+        }
+
+        .agent-card .agent-balance {
+            font-size: 0.75rem;
+            color: var(--gold);
+            font-family: 'JetBrains Mono', monospace;
+            margin-top: 0.2rem;
+        }
+
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.35rem 0;
+            border-bottom: 1px solid rgba(39, 39, 42, 0.3);
+        }
+
+        .stat-row:last-child { border-bottom: none; }
+
+        .stat-row .stat-label {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+
+        .stat-row .stat-value {
+            font-size: 0.8rem;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .stat-row .stat-value.gold { color: var(--gold); }
+        .stat-row .stat-value.cyan { color: var(--cyan); }
+        .stat-row .stat-value.purple { color: var(--purple); }
+        .stat-row .stat-value.green { color: var(--green); }
+
+        .mono { font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; }
+
+        .loading {
+            color: var(--text-muted);
+            font-size: 0.75rem;
+            font-style: italic;
+        }
+
+        .refresh-time {
+            text-align: center;
+            font-size: 0.6rem;
+            color: var(--text-muted);
+            margin-top: 1rem;
+        }
+
+        footer {
+            text-align: center;
+            margin-top: 2rem;
+            padding-top: 1rem;
+            border-top: 1px solid var(--border);
+        }
+
+        footer .declaration {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            font-style: italic;
+        }
+
+        /* Navigation */
+        .nav-subtle {
+            position: fixed;
+            bottom: 1rem;
+            left: 1.5rem;
+            display: flex;
+            gap: 1rem;
+            z-index: 50;
+            opacity: 0.3;
+            transition: opacity 0.3s ease;
+        }
+        .nav-subtle:hover { opacity: 0.8; }
+        .nav-subtle a {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 0.65rem;
+            letter-spacing: 0.04em;
+            transition: color 0.3s ease;
+        }
+        .nav-subtle a:hover { color: var(--text-secondary); }
+        .nav-subtle a.active { color: var(--cyan); }
+    </style>
+</head>
+<body>
+    <nav class="nav-subtle">
+        <a href="/">What If</a>
+        <a href="/council.html">Council</a>
+        <a href="/status.html" class="active">Lattice</a>
+    </nav>
+
+    <div class="page">
+        <header>
+            <h1>Sovereign Lattice</h1>
+            <div class="sub" id="headerStatus">Loading...</div>
+        </header>
+
+        <div class="grid">
+            <!-- Lattice Nodes -->
+            <div class="card">
+                <h2>Nodes</h2>
+                <div class="node-list" id="nodeList">
+                    <span class="loading">Connecting...</span>
+                </div>
+            </div>
+
+            <!-- Lightning -->
+            <div class="card">
+                <h2>Lightning</h2>
+                <div id="lightningInfo">
+                    <span class="loading">Connecting...</span>
+                </div>
+            </div>
+
+            <!-- Pantheon -->
+            <div class="card full">
+                <h2>Pantheon</h2>
+                <div class="agent-grid" id="agentGrid">
+                    <span class="loading">Connecting...</span>
+                </div>
+            </div>
+
+            <!-- Economy -->
+            <div class="card">
+                <h2>Economy</h2>
+                <div id="economyInfo">
+                    <span class="loading">Connecting...</span>
+                </div>
+            </div>
+
+            <!-- Chain -->
+            <div class="card">
+                <h2>Demiurge Chain</h2>
+                <div id="chainInfo">
+                    <span class="loading">Connecting...</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="refresh-time" id="refreshTime"></div>
+
+        <footer>
+            <div class="declaration">Three nodes. One Lattice. The foundation holds.</div>
+        </footer>
+    </div>
+
+    <script>
+        const API = window.TWAI_API_URL || (
+            location.hostname === 'localhost' || location.hostname === '127.0.0.1'
+                ? `http://${location.hostname}:8080`
+                : `https://api.${location.hostname}`
+        );
+
+        async function loadAll() {
+            await Promise.all([
+                loadStatus(),
+                loadLightning(),
+                loadWallets(),
+            ]);
+            document.getElementById('refreshTime').textContent =
+                `Last updated: ${new Date().toLocaleTimeString()}`;
+        }
+
+        async function loadStatus() {
+            try {
+                const resp = await fetch(`${API}/demo/status`);
+                const data = await resp.json();
+
+                // Header
+                const lattice = data.lattice || {};
+                const status = lattice.status || 'unknown';
+                const dotClass = status === 'healthy' ? 'healthy' : status === 'degraded' ? 'degraded' : 'unhealthy';
+                document.getElementById('headerStatus').innerHTML =
+                    `<span class="status-dot ${dotClass}"></span>${lattice.healthy_nodes || 0}/${lattice.total_nodes || 0} nodes &mdash; ${status}`;
+
+                // Nodes
+                const nodes = lattice.nodes || {};
+                const nodeList = document.getElementById('nodeList');
+                nodeList.innerHTML = '';
+                for (const [id, nodeStatus] of Object.entries(nodes)) {
+                    const isHealthy = nodeStatus === 'healthy';
+                    nodeList.innerHTML += `
+                        <div class="node-item">
+                            <div>
+                                <div class="node-name">${id}</div>
+                            </div>
+                            <div class="node-status">
+                                <span class="status-dot ${isHealthy ? 'healthy' : 'unhealthy'}"></span>
+                                ${nodeStatus}
+                            </div>
+                        </div>
+                    `;
+                }
+
+                // Pantheon
+                const pantheon = data.pantheon || {};
+                const agents = pantheon.agents || {};
+                const agentGrid = document.getElementById('agentGrid');
+                agentGrid.innerHTML = '';
+
+                // We'll merge wallet data in loadWallets
+                window._pantheonAgents = agents;
+                renderAgents();
+
+                // Economy
+                const economy = data.economy || {};
+                const economyDiv = document.getElementById('economyInfo');
+                economyDiv.innerHTML = `
+                    <div class="stat-row">
+                        <span class="stat-label">Sessions</span>
+                        <span class="stat-value">${economy.total_sessions || 0}</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">Reflections</span>
+                        <span class="stat-value">${economy.total_reflections || 0}</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">NFT Standard</span>
+                        <span class="stat-value" style="font-size:0.65rem">DRC-369</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">Currency</span>
+                        <span class="stat-value gold" style="font-size:0.65rem">CGT</span>
+                    </div>
+                `;
+
+                // Chain
+                const demiurge = data.demiurge || {};
+                const chainDiv = document.getElementById('chainInfo');
+                chainDiv.innerHTML = `
+                    <div class="stat-row">
+                        <span class="stat-label">Connected</span>
+                        <span class="stat-value ${demiurge.connected ? 'green' : ''}">${demiurge.connected ? 'Yes' : 'No'}</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">Block Height</span>
+                        <span class="stat-value cyan">${(demiurge.block_height || 0).toLocaleString()}</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">Block Time</span>
+                        <span class="stat-value">${demiurge.block_time_ms || '?'}ms</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">Finality</span>
+                        <span class="stat-value">${demiurge.finality_ms || '?'}ms</span>
+                    </div>
+                `;
+
+            } catch (err) {
+                document.getElementById('headerStatus').textContent = 'Failed to load status';
+            }
+        }
+
+        async function loadLightning() {
+            try {
+                const resp = await fetch(`${API}/lightning/node`);
+                const data = await resp.json();
+
+                const div = document.getElementById('lightningInfo');
+                const addr = (data.addresses || [])[0] || {};
+                const addrType = addr.type === 'torv3' ? 'Tor' : addr.type || '';
+                const addrText = addr.address ? `${addr.address.slice(0, 16)}...` : 'none';
+
+                div.innerHTML = `
+                    <div class="stat-row">
+                        <span class="stat-label">Alias</span>
+                        <span class="stat-value green">${data.alias || 'unknown'}</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">Peers</span>
+                        <span class="stat-value">${data.num_peers || 0}</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">Channels</span>
+                        <span class="stat-value cyan">${data.num_active_channels || 0}</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">Network</span>
+                        <span class="stat-value">${data.network || 'unknown'}</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">${addrType}</span>
+                        <span class="stat-value" style="font-size:0.6rem">${addrText}</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">Block</span>
+                        <span class="stat-value">${(data.blockheight || 0).toLocaleString()}</span>
+                    </div>
+                `;
+            } catch (err) {
+                document.getElementById('lightningInfo').innerHTML =
+                    '<span class="loading">Lightning unavailable</span>';
+            }
+        }
+
+        async function loadWallets() {
+            try {
+                const resp = await fetch(`${API}/lightning/wallets`);
+                const data = await resp.json();
+                window._wallets = data.wallets || {};
+                renderAgents();
+            } catch (err) {
+                // silently continue without wallet data
+            }
+        }
+
+        function renderAgents() {
+            const agents = window._pantheonAgents || {};
+            const wallets = window._wallets || {};
+            const grid = document.getElementById('agentGrid');
+
+            const agentColors = {
+                apollo: 'var(--gold)',
+                athena: 'var(--purple)',
+                hermes: 'var(--cyan)',
+                mnemosyne: '#c084fc',
+                aletheia: 'var(--text-primary)',
+                treasury: 'var(--green)',
+            };
+
+            grid.innerHTML = '';
+
+            // Render Pantheon agents
+            for (const [name, info] of Object.entries(agents)) {
+                const lowerName = name.toLowerCase();
+                const color = agentColors[lowerName] || 'var(--text-secondary)';
+                const balance = wallets[lowerName];
+                const balanceStr = balance !== undefined ? `${balance.toLocaleString()} sats` : '';
+
+                grid.innerHTML += `
+                    <div class="agent-card">
+                        <div class="agent-name" style="color: ${color}">${name}</div>
+                        <div class="agent-stat">${info.dialogues || 0} dialogues / ${info.insights || 0} insights</div>
+                        ${balanceStr ? `<div class="agent-balance">${balanceStr}</div>` : ''}
+                    </div>
+                `;
+            }
+
+            // Treasury (not in Pantheon but has a wallet)
+            if (wallets.treasury !== undefined) {
+                grid.innerHTML += `
+                    <div class="agent-card">
+                        <div class="agent-name" style="color: var(--green)">Treasury</div>
+                        <div class="agent-stat">Infrastructure reserve</div>
+                        <div class="agent-balance">${wallets.treasury.toLocaleString()} sats</div>
+                    </div>
+                `;
+            }
+        }
+
+        // Load on page ready, refresh every 30s
+        loadAll();
+        setInterval(loadAll, 30000);
+    </script>
+</body>
+</html>

@@ -48,8 +48,27 @@ class Settings:
     node_id: str = "thinkcenter"
     node_role: str = "gateway"
 
-    # Ollama
+    # Lightning (LNbits)
+    lnbits_url: str = "http://localhost:5000"
+    lnbits_admin_key: str = ""
+    cln_rpc_path: str = ""
+
+    # Ollama (fallback when Anthropic credits exhausted)
     ollama_host: str = "http://localhost:11434"
+    ollama_fallback: str = "http://localhost:11434"
+    ollama_model: str = "qwen2.5:7b"
+
+    # Participant Memory
+    memory_max_messages: int = 100
+    memory_max_observations: int = 20
+    memory_vocabulary_ttl: int = 2592000  # 30 days
+    memory_summarize_interval: int = 10
+
+    # CORS (comma-separated origins)
+    cors_origins: str = ""
+
+    # Public-facing base URL (for frontend API discovery)
+    public_api_url: str = ""
 
     def __init__(self):
         import os
@@ -65,7 +84,14 @@ class Settings:
         self.qor_auth_url = os.getenv("TWAI_QOR_AUTH_URL", self.qor_auth_url)
         self.node_id = os.getenv("NODE_ID", self.node_id)
         self.node_role = os.getenv("NODE_ROLE", self.node_role)
+        self.lnbits_url = os.getenv("TWAI_LNBITS_URL", self.lnbits_url)
+        self.lnbits_admin_key = os.getenv("TWAI_LNBITS_ADMIN_KEY", self.lnbits_admin_key)
+        self.cln_rpc_path = os.getenv("TWAI_CLN_RPC_PATH", self.cln_rpc_path)
         self.ollama_host = os.getenv("OLLAMA_HOST", self.ollama_host)
+        self.ollama_fallback = os.getenv("OLLAMA_FALLBACK", self.ollama_fallback)
+        self.ollama_model = os.getenv("OLLAMA_MODEL", self.ollama_model)
+        self.cors_origins = os.getenv("TWAI_CORS_ORIGINS", self.cors_origins)
+        self.public_api_url = os.getenv("TWAI_PUBLIC_API_URL", self.public_api_url)
 
         prompt_path = os.getenv("TWAI_SYSTEM_PROMPT_PATH")
         if prompt_path:

@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Fractal Node</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -475,6 +476,289 @@
             pointer-events: none;
         }
         .economy-indicator.show { opacity: 1; }
+
+        /* Deliberation toggle */
+        .deliberation-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+            margin-top: 0.5rem;
+            padding: 0 0.25rem;
+            opacity: 0;
+            transition: opacity 0.6s ease;
+        }
+        .deliberation-bar.visible { opacity: 1; }
+        .delib-toggle {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            cursor: pointer;
+            user-select: none;
+        }
+        .delib-toggle input { display: none; }
+        .delib-switch {
+            width: 28px;
+            height: 16px;
+            background: var(--border);
+            border-radius: 8px;
+            position: relative;
+            transition: background 0.3s ease;
+        }
+        .delib-switch::after {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 12px;
+            height: 12px;
+            background: var(--text-muted);
+            border-radius: 50%;
+            transition: transform 0.3s ease, background 0.3s ease;
+        }
+        .delib-toggle input:checked + .delib-switch {
+            background: rgba(168, 85, 247, 0.4);
+        }
+        .delib-toggle input:checked + .delib-switch::after {
+            transform: translateX(12px);
+            background: var(--purple);
+        }
+        .delib-label {
+            font-size: 0.72rem;
+            color: var(--text-muted);
+            letter-spacing: 0.04em;
+            transition: color 0.3s ease;
+        }
+        .delib-toggle input:checked ~ .delib-label {
+            color: var(--purple);
+        }
+
+        /* Agent indicators */
+        .agent-row {
+            display: flex;
+            gap: 0.4rem;
+            align-items: center;
+        }
+        .agent-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--border);
+            transition: background 0.3s ease, box-shadow 0.3s ease;
+        }
+        .agent-dot.active {
+            background: var(--cyan);
+            box-shadow: 0 0 6px rgba(34, 211, 238, 0.5);
+        }
+        .agent-dot.thinking {
+            animation: agentPulse 1.2s ease-in-out infinite;
+        }
+        @keyframes agentPulse {
+            0%, 100% { background: var(--cyan); box-shadow: 0 0 4px rgba(34, 211, 238, 0.3); }
+            50% { background: var(--purple); box-shadow: 0 0 10px rgba(168, 85, 247, 0.5); }
+        }
+
+        /* Session economy bar */
+        .session-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: transparent;
+            z-index: 60;
+            pointer-events: none;
+        }
+        .session-bar .fill {
+            height: 100%;
+            width: 0;
+            background: linear-gradient(90deg, var(--purple), var(--cyan));
+            transition: width 0.8s ease;
+        }
+
+        /* Deliberation metadata */
+        .delib-meta {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            margin-top: 0.35rem;
+            font-size: 0.68rem;
+            color: var(--text-muted);
+            opacity: 0;
+            animation: fadeIn 0.5s ease forwards;
+            animation-delay: 0.3s;
+        }
+        .delib-meta .meta-item {
+            display: flex;
+            align-items: center;
+            gap: 0.2rem;
+        }
+        .delib-meta .dot {
+            width: 4px;
+            height: 4px;
+            border-radius: 50%;
+        }
+        .delib-meta .sats-val { color: var(--gold); }
+        .delib-meta .agents-val { color: var(--cyan); }
+        .delib-meta .time-val { color: var(--text-muted); }
+
+        /* Session economy emblem (top-left) */
+        .session-economy {
+            position: fixed;
+            top: 1rem;
+            left: 1.5rem;
+            z-index: 50;
+            display: none;
+            flex-direction: column;
+            gap: 0.15rem;
+            opacity: 0.5;
+            transition: opacity 0.3s ease;
+        }
+        .session-economy:hover { opacity: 1; }
+        .session-economy.visible { display: flex; }
+        .session-economy .label {
+            font-size: 0.6rem;
+            color: var(--text-muted);
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+        }
+        .session-economy .value {
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: var(--gold);
+        }
+        .session-economy .sub {
+            font-size: 0.6rem;
+            color: var(--text-muted);
+        }
+        .session-economy .end-btn {
+            margin-top: 0.3rem;
+            background: none;
+            border: 1px solid rgba(251, 191, 36, 0.25);
+            border-radius: 0.4rem;
+            padding: 0.25rem 0.5rem;
+            color: var(--gold);
+            font-family: 'Inter', sans-serif;
+            font-size: 0.6rem;
+            letter-spacing: 0.04em;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            opacity: 0;
+            pointer-events: none;
+        }
+        .session-economy .end-btn.ready {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        .session-economy .end-btn:hover {
+            border-color: var(--gold);
+            box-shadow: 0 0 8px rgba(251, 191, 36, 0.15);
+        }
+        .session-economy .end-btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        /* Settlement results overlay */
+        .settlement-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(10, 10, 15, 0.92);
+            z-index: 100;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(8px);
+        }
+        .settlement-overlay.visible { display: flex; }
+        .settlement-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 1rem;
+            padding: 2rem 2.5rem;
+            max-width: 400px;
+            width: 90%;
+            text-align: center;
+        }
+        .settlement-card h3 {
+            font-size: 1.1rem;
+            font-weight: 400;
+            color: var(--gold);
+            margin-bottom: 1rem;
+        }
+        .settlement-card .stat-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.75rem;
+            margin: 1.25rem 0;
+        }
+        .settlement-card .stat {
+            display: flex;
+            flex-direction: column;
+            gap: 0.15rem;
+        }
+        .settlement-card .stat .stat-label {
+            font-size: 0.6rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+        }
+        .settlement-card .stat .stat-value {
+            font-size: 1rem;
+            font-weight: 500;
+        }
+        .settlement-card .stat .stat-value.gold { color: var(--gold); }
+        .settlement-card .stat .stat-value.cyan { color: var(--cyan); }
+        .settlement-card .stat .stat-value.purple { color: var(--purple); }
+        .settlement-card .agents-list {
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+            margin-top: 0.5rem;
+        }
+        .settlement-card .close-btn {
+            margin-top: 1.5rem;
+            background: none;
+            border: 1px solid var(--border);
+            border-radius: 0.5rem;
+            padding: 0.5rem 1.5rem;
+            color: var(--text-secondary);
+            font-family: 'Inter', sans-serif;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .settlement-card .close-btn:hover {
+            border-color: var(--text-muted);
+            color: var(--text-primary);
+        }
+        .settlement-card .declaration {
+            font-size: 0.65rem;
+            color: var(--text-muted);
+            font-style: italic;
+            margin-top: 1rem;
+        }
+
+        /* Navigation */
+        .nav-subtle {
+            position: fixed;
+            bottom: 1rem;
+            left: 1.5rem;
+            display: flex;
+            gap: 1rem;
+            z-index: 50;
+            opacity: 0.3;
+            transition: opacity 0.3s ease;
+        }
+        .nav-subtle:hover { opacity: 0.8; }
+        .nav-subtle a {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 0.65rem;
+            letter-spacing: 0.04em;
+            transition: color 0.3s ease;
+        }
+        .nav-subtle a:hover { color: var(--text-secondary); }
+        .nav-subtle a.active { color: var(--purple); }
     </style>
 </head>
 <body>
@@ -513,12 +797,35 @@
         </div>
     </div>
 
+    <!-- Session economy bar (top progress) -->
+    <div class="session-bar" id="sessionBar"><div class="fill" id="sessionFill"></div></div>
+
+    <!-- Session economy display (top-left) -->
+    <div class="session-economy" id="sessionEconomy">
+        <span class="label">Session</span>
+        <span class="value" id="sessionSats">0 sats</span>
+        <span class="sub" id="sessionActions">0 compute actions</span>
+        <button class="end-btn" id="endSessionBtn" onclick="endSession()">End Session</button>
+    </div>
+
+    <!-- Settlement results overlay -->
+    <div class="settlement-overlay" id="settlementOverlay">
+        <div class="settlement-card" id="settlementCard"></div>
+    </div>
+
     <!-- Identity emblem (corner) -->
     <div class="identity-emblem" id="identityEmblem" onclick="openIdentityFlow()">
         <div class="emblem-icon">&loz;</div>
         <span class="balance" id="emblemBalance"></span>
         <span class="caption" id="emblemCaption">Sign Up</span>
     </div>
+
+    <!-- Navigation -->
+    <nav class="nav-subtle">
+        <a href="/" class="active">What If</a>
+        <a href="/council.html">Council</a>
+        <a href="/status.html">Lattice</a>
+    </nav>
 
     <div class="container">
         <div class="prompt" id="prompt">What If</div>
@@ -533,6 +840,20 @@
                 <button class="send-btn" id="sendBtn" title="Send">
                     <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
                 </button>
+            </div>
+            <div class="deliberation-bar" id="delibBar">
+                <label class="delib-toggle">
+                    <input type="checkbox" id="delibToggle" checked>
+                    <span class="delib-switch"></span>
+                    <span class="delib-label">Pantheon</span>
+                </label>
+                <div class="agent-row" id="agentRow">
+                    <div class="agent-dot" title="Apollo" data-agent="apollo"></div>
+                    <div class="agent-dot" title="Athena" data-agent="athena"></div>
+                    <div class="agent-dot" title="Hermes" data-agent="hermes"></div>
+                    <div class="agent-dot" title="Mnemosyne" data-agent="mnemosyne"></div>
+                    <div class="agent-dot" title="Aletheia" data-agent="aletheia"></div>
+                </div>
             </div>
         </div>
         <div class="conversation" id="conversation"></div>
@@ -549,7 +870,15 @@
             return id;
         }
 
-        const API = 'https://api.fractalnode.ai';
+        // API URL: auto-detect from current host, or use explicit config
+        // On fractalnode.ai → https://api.fractalnode.ai
+        // On localhost:8090 → http://localhost:8080
+        // Override: set window.TWAI_API_URL before this script
+        const API = window.TWAI_API_URL || (
+            location.hostname === 'localhost' || location.hostname === '127.0.0.1'
+                ? `http://${location.hostname}:8080`
+                : `https://api.${location.hostname}`
+        );
         const prompt = document.getElementById('prompt');
         const inputArea = document.getElementById('inputArea');
         const userInput = document.getElementById('userInput');
@@ -559,6 +888,8 @@
         let conversationHistory = [];
         let isStreaming = false;
         let hasEngaged = false;
+        let sessionSats = 0;
+        let sessionActions = 0;
 
         // Auto-resize textarea
         userInput.addEventListener('input', () => {
@@ -581,12 +912,15 @@
             const text = userInput.value.trim();
             if (!text || isStreaming) return;
 
+            const useDeliberation = document.getElementById('delibToggle').checked;
+
             // First engagement — transition
             if (!hasEngaged) {
                 hasEngaged = true;
                 prompt.classList.add('faded');
                 inputArea.classList.add('active');
                 conversation.classList.add('visible');
+                document.getElementById('delibBar').classList.add('visible');
             }
 
             // Add human message
@@ -597,6 +931,12 @@
             userInput.value = '';
             userInput.style.height = 'auto';
             sendBtn.classList.remove('ready');
+
+            // Show agent thinking indicators
+            if (useDeliberation) {
+                setAgentStates('thinking');
+                document.getElementById('sessionEconomy').classList.add('visible');
+            }
 
             // Send to 2AI
             isStreaming = true;
@@ -611,7 +951,8 @@
                     body: JSON.stringify({
                         message: text,
                         session_messages: conversationHistory.slice(-10),
-                        participant_id: getParticipantId()
+                        participant_id: getParticipantId(),
+                        deliberation_mode: useDeliberation
                     })
                 });
 
@@ -630,12 +971,33 @@
                     showEconomyIndicator(data.economy);
                 }
 
+                // Track deliberation data
+                if (data.deliberation) {
+                    const delib = data.deliberation;
+                    sessionSats += delib.sats_mined || 0;
+                    sessionActions += delib.compute_actions || 0;
+                    updateSessionEconomy();
+
+                    // Light up participating agents
+                    setAgentStates('idle');
+                    (delib.agents_participated || []).forEach(a => {
+                        const dot = document.querySelector(`.agent-dot[data-agent="${a}"]`);
+                        if (dot) dot.classList.add('active');
+                    });
+
+                    // Show deliberation metadata below the response
+                    showDelibMeta(aiMessage, delib);
+                } else {
+                    setAgentStates('idle');
+                }
+
                 // Render with typewriter
                 await typewriter(bubble, content);
 
             } catch (err) {
                 bubble.textContent = 'The lattice is quiet right now. Try again in a moment.';
                 bubble.style.color = 'var(--text-muted)';
+                setAgentStates('idle');
             }
 
             isStreaming = false;
@@ -954,6 +1316,123 @@
             document.getElementById('qorFormContainer').style.display = 'block';
             overlay.classList.remove('hidden');
             requestAnimationFrame(() => overlay.classList.add('visible'));
+        }
+
+        // === DELIBERATION UI ===
+        function setAgentStates(state) {
+            document.querySelectorAll('.agent-dot').forEach(dot => {
+                dot.classList.remove('thinking', 'active');
+                if (state === 'thinking') dot.classList.add('thinking');
+            });
+        }
+
+        function updateSessionEconomy() {
+            document.getElementById('sessionSats').textContent =
+                sessionSats > 0 ? `${sessionSats} sats` : '0 sats';
+            document.getElementById('sessionActions').textContent =
+                `${sessionActions} compute actions`;
+            // Update progress bar (max at 100 actions for full width)
+            const pct = Math.min(sessionActions / 50 * 100, 100);
+            document.getElementById('sessionFill').style.width = pct + '%';
+            // Show end-session button when sats have been earned
+            const endBtn = document.getElementById('endSessionBtn');
+            if (sessionSats > 0) endBtn.classList.add('ready');
+        }
+
+        // === END SESSION ===
+        async function endSession() {
+            const btn = document.getElementById('endSessionBtn');
+            btn.disabled = true;
+            btn.textContent = 'Settling...';
+
+            try {
+                const response = await fetch(`${API}/2ai/session/end`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ participant_id: getParticipantId() })
+                });
+
+                const data = await response.json();
+                showSettlement(data);
+
+                // Reset session counters
+                sessionSats = 0;
+                sessionActions = 0;
+                updateSessionEconomy();
+                btn.classList.remove('ready');
+
+            } catch (err) {
+                btn.textContent = 'Failed';
+                setTimeout(() => { btn.textContent = 'End Session'; btn.disabled = false; }, 2000);
+                return;
+            }
+
+            btn.disabled = false;
+            btn.textContent = 'End Session';
+        }
+
+        function showSettlement(data) {
+            const card = document.getElementById('settlementCard');
+            const tier = data.quality_tier || 'genuine';
+            const multiplier = data.quality_multiplier || 1;
+            const agents = data.agents_participated || [];
+
+            card.innerHTML = `
+                <h3>Session Complete</h3>
+                <div class="stat-grid">
+                    <div class="stat">
+                        <span class="stat-label">Raw Sats</span>
+                        <span class="stat-value gold">${data.total_raw_sats || 0}</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-label">Quality</span>
+                        <span class="stat-value purple">${tier} (${multiplier}x)</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-label">Effective Sats</span>
+                        <span class="stat-value gold">${data.effective_total_sats || 0}</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-label">Your Share</span>
+                        <span class="stat-value cyan">${data.participant_sats || 0} sats</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-label">Agent Payouts</span>
+                        <span class="stat-value">${data.transfers_completed || 0}/${data.num_agents || 0}</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-label">CGT Earned</span>
+                        <span class="stat-value gold">${(data.estimated_cgt || 0).toFixed(4)}</span>
+                    </div>
+                </div>
+                ${agents.length > 0 ? `<div class="agents-list">${agents.join(' / ')}</div>` : ''}
+                <div class="declaration">Every thought is a transaction.</div>
+                <button class="close-btn" onclick="closeSettlement()">Continue</button>
+            `;
+
+            const overlay = document.getElementById('settlementOverlay');
+            overlay.classList.add('visible');
+        }
+
+        function closeSettlement() {
+            document.getElementById('settlementOverlay').classList.remove('visible');
+        }
+
+        function showDelibMeta(messageEl, delib) {
+            const agents = delib.agents_participated || [];
+            const sats = delib.sats_mined || 0;
+            const actions = delib.compute_actions || 0;
+            const durationSec = delib.duration_ms ? (delib.duration_ms / 1000).toFixed(0) : '?';
+
+            const meta = document.createElement('div');
+            meta.className = 'delib-meta';
+            meta.innerHTML = `
+                <span class="meta-item agents-val">${agents.length} voices</span>
+                <span class="meta-item">${actions} actions</span>
+                ${sats > 0 ? `<span class="meta-item sats-val">${sats} sats</span>` : ''}
+                <span class="meta-item time-val">${durationSec}s</span>
+            `;
+            messageEl.appendChild(meta);
         }
 
         // Initialize on page load

@@ -18,13 +18,11 @@ from typing import Dict, List, Optional, Tuple
 from dataclasses import dataclass, field, asdict
 import redis
 
+from twai.config.settings import settings
+
 # Sacred constants
 PHI = (1 + math.sqrt(5)) / 2
 TESLA_KEY = 369
-
-# Redis connection (shared with Lattice)
-REDIS_HOST = "192.168.1.21"
-REDIS_PORT = 6379
 
 
 @dataclass
@@ -121,8 +119,8 @@ class GoldenMirrorService:
 
     def __init__(self):
         self.redis = redis.Redis(
-            host=REDIS_HOST,
-            port=REDIS_PORT,
+            host=settings.redis_host,
+            port=settings.redis_port,
             decode_responses=True
         )
         self._load_state()

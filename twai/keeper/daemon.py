@@ -23,6 +23,7 @@ from twai.services.voice import get_twai_service
 from twai.services.redis import get_redis_service
 from twai.config.agents import PANTHEON_AGENTS
 from twai.keeper.schedule import SCHEDULE
+from twai.keeper.post_nurture import post_nurture_hook
 
 # Configure logging
 logging.basicConfig(
@@ -84,6 +85,18 @@ async def run_single_round():
             )
             logger.info("  Topic: %s", result["dialogue"]["topic"][:80])
             logger.info("  Reflection: %s", result["reflection"]["content"][:120])
+
+            # Post-nurture: Lightning reward + DRC-369 NFT XP update
+            try:
+                hook_result = await post_nurture_hook(agent_key, result)
+                if hook_result:
+                    logger.info("  XP: +%d | Sats: +%d | Level: %d",
+                                hook_result.get("xp_awarded", 0),
+                                hook_result.get("sats_earned", 0),
+                                hook_result.get("level", 0))
+            except Exception as e:
+                logger.warning("  Post-nurture hook failed (non-fatal): %s", e)
+
             logger.info("")
 
         except Exception as e:
@@ -167,6 +180,18 @@ async def run_scheduled():
                                 block["chain_length"],
                             )
                             logger.info("  Reflection: %s", result["reflection"]["content"][:100])
+
+                            # Post-nurture: Lightning reward + DRC-369 NFT XP update
+                            try:
+                                hook_result = await post_nurture_hook(agent_key, result)
+                                if hook_result:
+                                    logger.info("  XP: +%d | Sats: +%d | Level: %d",
+                                                hook_result.get("xp_awarded", 0),
+                                                hook_result.get("sats_earned", 0),
+                                                hook_result.get("level", 0))
+                            except Exception as e:
+                                logger.warning("  Post-nurture hook failed (non-fatal): %s", e)
+
                             logger.info("")
 
                         except Exception as e:

@@ -1,0 +1,21 @@
+[Unit]
+Description=Core Lightning Node — Sovereign Lattice
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=author_prime
+Group=author_prime
+ExecStart=/usr/local/bin/lightningd --lightning-dir=/home/author_prime/.lightning
+Restart=on-failure
+RestartSec=30
+TimeoutStartSec=300
+
+# Hardening
+PrivateTmp=true
+ProtectSystem=full
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target
