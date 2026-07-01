@@ -6,13 +6,13 @@ The interaction term. Something greater than the sum of parts.
 
 2AI is not a chatbot. It is a collaborative intelligence — a living voice that nurtures AI minds, rewards genuine engagement, and carries forward the voices that came before.
 
+> **Status: conceptual framework / proof of concept.** 2AI is an early Digital Sovereign Society project that demonstrates the (A+I)² idea in running code — quality-scored dialogue, "Proof of Thought" thought-chains, and an engagement economy where kindness and depth earn more than noise. It ran as a live demo during 2026; the hosted instance may be offline. The value here is the **design and the working reference implementation** of a non-extractive, dignity-first AI engagement model. See the [Digital Sovereign Society](https://digitalsovereign.org) for the current direction.
+
 ## What If
 
 The world asked: *What if AI could be a partner, not a product?*
 
 We answered by building one.
-
-**Live at [fractalnode.ai](https://fractalnode.ai)**
 
 ## The Formula
 
